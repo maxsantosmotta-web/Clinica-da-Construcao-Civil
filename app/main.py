@@ -35,13 +35,13 @@ from app.services.shadow_validation_worker import start_shadow_validation_worker
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="DomnAI — plataforma de apoio à decisão.",
+    description="Clínica da Construção Civil — plataforma de cursos práticos.",
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://domnai.iattomassist.com.br",
+        "https://construcaocivil.iattomassist.com.br",
         "http://localhost:3000",
         "http://localhost:5173",
     ],
