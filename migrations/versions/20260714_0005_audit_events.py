@@ -14,6 +14,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if inspector.has_table("audit_events"):
+        return
+
     op.create_table(
         "audit_events",
         sa.Column("id", sa.String(length=36), nullable=False),
@@ -39,6 +44,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if not inspector.has_table("audit_events"):
+        return
     op.drop_index("ix_audit_events_created_at", table_name="audit_events")
     op.drop_index("ix_audit_events_source_key", table_name="audit_events")
     op.drop_index("ix_audit_events_result", table_name="audit_events")
