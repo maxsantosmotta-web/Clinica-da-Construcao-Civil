@@ -26,5 +26,5 @@ def public_config():
         "clerkKeyEnvironment": "production" if settings.clerk_publishable_key.startswith("pk_live_") else "development",
         "clerkKeySource": settings.clerk_publishable_key_source,
         "clerkFrontendApi": _decode_clerk_frontend_api(settings.clerk_publishable_key),
-        "applicationOrigin": "https://domnai.iattomassist.com.br",
+        "applicationOrigin": "https://construcaocivil.iattomassist.com.br",
     }
