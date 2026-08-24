@@ -1,57 +1,139 @@
-# Clínica da Construção Civil
+# DomnAI
 
-Plataforma de cursos da **Clínica da Construção Civil**.
+Plataforma de apoio à decisão.
 
-**Subtítulo oficial:** Aprenda na prática elétrica, hidráulica, manutenção e serviços essenciais da construção civil.
+**Slogan:** Transforme escolhas em resultados com inteligência.
 
 ## Proposta
 
-A Clínica da Construção Civil é um treinamento prático desenvolvido para quem deseja aprender serviços essenciais da construção civil de forma simples e acessível. A plataforma reunirá aulas em vídeo, apostilas e materiais complementares sobre elétrica, hidráulica, manutenção e reparos, permitindo ao aluno estudar no próprio ritmo e acompanhar sua evolução até a conclusão do curso.
+O DomnAI ajuda pessoas a pesquisar, analisar, comparar e tomar decisões melhores antes de agir. O sistema atende operações como análise contratual, comparação de produtos, avaliação de orçamentos, negociação, abertura e diagnóstico de empresas, finanças, investimentos, veículos, imóveis e cálculo de rescisão trabalhista.
 
-## Planos oficiais
-
-- **Mensal:** R$ 10,90/mês
-- **Anual promocional:** R$ 99,00/ano
-
-## Estrutura técnica reaproveitada
-
-Este repositório nasceu como uma cópia independente da base técnica do DomnAI e será adaptado exclusivamente para a Clínica da Construção Civil.
-
-A base atualmente inclui:
+## Arquitetura atual
 
 - Backend Python com FastAPI e Uvicorn.
 - Frontend React com Vite.
 - Autenticação com Clerk.
 - PostgreSQL com SQLAlchemy.
 - Migrações versionadas com Alembic.
-- Faturamento recorrente com Stripe.
-- Estrutura administrativa e de usuários.
-- Deploy preparado para Railway.
+- Faturamento e créditos com Stripe.
+- Biblioteca e lixeira por usuário.
+- Memória de conversa e memória estruturada de diagnóstico.
+- Orquestrador universal para interpretar intenção e selecionar o fluxo correto.
+- Refinador final para melhorar clareza sem alterar evidências ou resultados determinísticos.
+- Motor determinístico de cálculo de rescisão trabalhista.
+- Geração real de relatórios PDF com confirmação explícita do usuário.
 
-## Direção da adaptação
+## Fluxo de inteligência
 
-Serão preservados os componentes úteis de autenticação, usuários, banco, faturamento e infraestrutura. Serão removidos os recursos específicos do DomnAI que não fazem parte do produto educacional, como chat, biblioteca de arquivos do usuário, lixeira, créditos e motores de inteligência voltados à tomada de decisão.
+Toda operação entra pelo mesmo fluxo:
 
-A nova plataforma será organizada como área do aluno, com módulos de aulas, materiais complementares, acompanhamento de progresso, assinatura e certificado.
+1. autenticação e validação de crédito;
+2. carregamento do histórico, anexos e memória estruturada;
+3. planejamento pelo Orquestrador;
+4. seleção de motor especializado, quando disponível;
+5. geração da resposta-base;
+6. refinamento final;
+7. atualização da memória;
+8. medição e cobrança de créditos;
+9. entrega ao frontend.
 
-## Certificação automática
+O motor especializado atualmente cadastrado é `labor_termination`, usado em cálculos de rescisão trabalhista. As demais operações usam o motor geral, sempre com Orquestração e Refinamento.
 
-O certificado deverá ser emitido automaticamente quando o aluno atingir 100% de conclusão das aulas obrigatórias.
+## PDF
 
-O fluxo previsto é:
+A oferta de PDF só pode aparecer quando a operação estiver concluída e não houver informação essencial pendente. O arquivo nunca é criado automaticamente.
 
-1. cada aula obrigatória registra status de conclusão;
-2. o sistema calcula o progresso do aluno;
-3. ao atingir 100%, o backend valida a conclusão;
-4. o sistema gera automaticamente o certificado;
-5. o certificado é vinculado à conta do aluno e fica disponível para acesso.
+Após confirmação explícita do usuário, o frontend chama:
 
-Os dados necessários para emissão serão obtidos do cadastro do usuário, incluindo nome completo e demais informações definidas para certificação.
+```text
+POST /api/reports/pdf
+```
+
+O relatório pode conter resumo, seções, indicadores, tabelas e gráficos sustentados pelos dados. Depois de criado, é salvo na Biblioteca do próprio usuário.
 
 ## Banco de dados e migrações
 
-O projeto usa Alembic. Mudanças estruturais no banco devem ser feitas por migrações versionadas em `migrations/versions`.
+O banco usa Alembic. Na produção, o container executa automaticamente:
+
+```bash
+alembic upgrade head
+```
+
+antes de iniciar o servidor.
+
+Para criar uma nova migração localmente:
+
+```bash
+alembic revision --autogenerate -m "descricao da alteracao"
+alembic upgrade head
+```
+
+Não adicionar ou alterar tabelas apenas com `Base.metadata.create_all`. Mudanças de estrutura devem receber uma nova revisão em `migrations/versions`.
+
+## Rodar localmente
+
+Backend:
+
+```bash
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Variáveis principais:
+
+- `DATABASE_URL`
+- `OPENAI_API_KEY`
+- `DOMNAI_OPENAI_MODEL`
+- `DOMNAI_ORCHESTRATOR_MODEL`
+- `DOMNAI_REFINER_MODEL`
+- `CLERK_PUBLISHABLE_KEY` ou equivalente suportada
+- `CLERK_SECRET_KEY`
+- `CLERK_AUTHORIZED_PARTIES`
+- `STRIPE_SECRET_KEY`
+
+## Endpoints principais
+
+- `GET /health`
+- `POST /api/chat/respond`
+- `GET|PUT /api/chat-state`
+- `GET|POST /api/library`
+- `GET /api/library/{id}/content`
+- `POST /api/library/{id}/trash`
+- `GET|DELETE /api/trash`
+- `POST /api/trash/{id}/restore`
+- `DELETE /api/trash/{id}`
+- `POST /api/reports/pdf`
+- rotas de perfil, autenticação, faturamento e decisões
+
+As rotas de diagnóstico e inicialização de banco exigem autenticação. `/api/database/init` aceita somente `POST`.
+
+## Health check
+
+`GET /health` informa o estado do backend e verifica:
+
+- conexão real com PostgreSQL;
+- configuração da OpenAI;
+- configuração do Clerk;
+- configuração do Stripe;
+- disponibilidade do gerador de PDF.
+
+O status pode ser `ok` ou `degraded`.
+
+## Deploy
+
+O Railway usa o `Dockerfile` da raiz. O build compila o frontend, instala as dependências do backend, executa as migrações e inicia o FastAPI na porta fornecida pelo ambiente.
+
+Commits enviados para a branch `main` acionam uma nova execução do deploy de produção.
 
 ## Estado atual
 
-A cópia independente da base DomnAI foi concluída. O próximo estágio é mapear e adaptar os módulos da nova plataforma sem alterar o repositório original do DomnAI.
+O DomnAI já possui autenticação, banco, pagamentos, créditos, IA real, memória, biblioteca, lixeira, Orquestrador, Refinador, motor trabalhista determinístico e geração de PDF. A etapa final é a validação completa em produção e a expansão gradual de motores especializados.
