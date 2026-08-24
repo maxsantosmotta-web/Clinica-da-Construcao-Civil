@@ -14,6 +14,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if inspector.has_table("chat_tasks"):
+        return
+
     op.create_table(
         "chat_tasks",
         sa.Column("id", sa.String(length=36), primary_key=True),
@@ -31,5 +36,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if not inspector.has_table("chat_tasks"):
+        return
     op.drop_index("ix_chat_tasks_user_created", table_name="chat_tasks")
     op.drop_table("chat_tasks")
