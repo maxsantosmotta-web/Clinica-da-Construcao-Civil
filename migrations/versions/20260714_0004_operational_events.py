@@ -14,6 +14,11 @@ depends_on = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if inspector.has_table("operational_events"):
+        return
+
     op.create_table(
         "operational_events",
         sa.Column("id", sa.String(length=36), nullable=False),
@@ -40,6 +45,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if not inspector.has_table("operational_events"):
+        return
     op.drop_index("ix_operational_events_resolved_at", table_name="operational_events")
     op.drop_index("ix_operational_events_last_seen_at", table_name="operational_events")
     op.drop_index("ix_operational_events_severity", table_name="operational_events")
