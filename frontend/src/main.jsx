@@ -184,11 +184,11 @@ function escapeHtml(value) {
 function renderStartupError(error) {
   const message = escapeHtml(error?.message || error || 'Erro desconhecido.');
 
-  console.error('[DomnAI] Falha na inicialização:', error);
+  console.error('[Clínica da Construção Civil] Falha na inicialização:', error);
   rootElement.innerHTML = `
     <main class="runtime-error-page" role="alert">
       <section class="runtime-error-card">
-        <h1>DomnAI</h1>
+        <h1>Clínica da Construção Civil</h1>
         <h2>Não foi possível concluir a abertura.</h2>
         <p>${message}</p>
         <button type="button" onclick="window.location.reload()">Tentar novamente</button>
@@ -198,18 +198,18 @@ function renderStartupError(error) {
 }
 
 window.onerror = (message, source, lineno, colno, error) => {
-  console.error('[DomnAI] Erro global:', { message, source, lineno, colno, error });
+  console.error('[Clínica da Construção Civil] Erro global:', { message, source, lineno, colno, error });
 };
 
 window.onunhandledrejection = (event) => {
-  console.error('[DomnAI] Promise rejeitada sem tratamento:', event.reason);
+  console.error('[Clínica da Construção Civil] Promise rejeitada sem tratamento:', event.reason);
 };
 
 async function startApplication() {
   const response = await fetch('/api/config/public', { cache: 'no-store' });
 
   if (!response.ok) {
-    throw new Error('Não foi possível carregar a configuração do DomnAI.');
+    throw new Error('Não foi possível carregar a configuração da Clínica da Construção Civil.');
   }
 
   const runtimeConfig = await response.json();
