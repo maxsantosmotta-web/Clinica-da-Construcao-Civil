@@ -1,0 +1,137 @@
+.domnai-app-shell.user-sidebar-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* No painel usuário, o controle de recolher segue o padrão do ADM:
+ * canto superior esquerdo, imediatamente antes do logo.
+ */
+.domnai-sidebar .sidebar-brand {
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.user-sidebar-collapse-button {
+  order: -1;
+  align-self: flex-start;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  margin-top: 0;
+  border: 1px solid rgba(225, 181, 77, 0.24);
+  border-radius: 10px;
+  background: #0d0d0d;
+  color: #d7b453;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.user-sidebar-collapse-button:hover,
+.user-sidebar-collapse-button:focus-visible {
+  background: #fff;
+  color: #111;
+  outline: none;
+}
+
+.domnai-app-shell.user-sidebar-collapsed .domnai-sidebar {
+  display: none;
+}
+
+.domnai-app-shell.user-sidebar-collapsed .mobile-menu-button {
+  display: grid;
+  place-items: center;
+}
+
+/*
+ * Com o menu recolhido, a conversa usa toda a largura útil,
+ * com o mesmo alinhamento e respiro para usuário, assistente e compositor.
+ */
+.domnai-app-shell.user-sidebar-collapsed .chat-workspace,
+.domnai-app-shell.user-sidebar-collapsed .chat-column {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+.domnai-app-shell.user-sidebar-collapsed .clean-chat-area {
+  width: 100%;
+  padding: 22px clamp(18px, 3vw, 34px);
+}
+
+.domnai-app-shell.user-sidebar-collapsed .chat-message,
+.domnai-app-shell.user-sidebar-collapsed .chat-message.user {
+  width: 100%;
+  max-width: none;
+}
+
+.domnai-app-shell.user-sidebar-collapsed .chat-message p {
+  width: 100%;
+  padding: 18px 20px;
+  box-sizing: border-box;
+}
+
+.domnai-app-shell.user-sidebar-collapsed .chat-composer {
+  width: auto;
+  margin: 0 clamp(18px, 3vw, 34px) 22px;
+}
+
+/*
+ * No desktop com o menu aberto, mensagens e compositor compartilham
+ * uma única coluna central. Isso evita o deslocamento e a quebra visual
+ * provocados pela largura reduzida ao lado da barra lateral.
+ */
+@media (min-width: 901px) {
+  .domnai-app-shell:not(.user-sidebar-collapsed) .clean-chat-area {
+    align-items: center;
+  }
+
+  .domnai-app-shell:not(.user-sidebar-collapsed) .chat-message,
+  .domnai-app-shell:not(.user-sidebar-collapsed) .chat-message.user {
+    width: min(100%, 920px);
+    max-width: 920px;
+    margin-inline: auto;
+    align-self: auto;
+    box-sizing: border-box;
+  }
+
+  .domnai-app-shell:not(.user-sidebar-collapsed) .chat-composer {
+    width: calc(100% - 44px);
+    max-width: 920px;
+    margin: 0 auto 22px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 900px) {
+  .domnai-sidebar .sidebar-brand {
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .user-sidebar-collapse-button {
+    display: none;
+  }
+
+  .domnai-app-shell.user-sidebar-collapsed .domnai-sidebar.is-open {
+    display: flex;
+  }
+
+  .domnai-sidebar .sidebar-close {
+    transform: translateY(-7px);
+  }
+
+  .domnai-app-shell.user-sidebar-collapsed .clean-chat-area {
+    padding: 16px;
+  }
+
+  .domnai-app-shell.user-sidebar-collapsed .chat-message p {
+    padding: 16px;
+  }
+
+  .domnai-app-shell.user-sidebar-collapsed .chat-composer {
+    width: auto;
+    margin: 0 16px 16px;
+  }
+}

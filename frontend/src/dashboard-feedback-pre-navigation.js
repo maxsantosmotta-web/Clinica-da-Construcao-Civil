@@ -1,0 +1,62 @@
+function closeFeedbackBeforeProfile(event) {
+  const profileTrigger = event.target.closest('.domnai-profile-trigger, .sidebar-profile');
+  if (!profileTrigger) return;
+
+  document.querySelector('[data-domnai-feedback-page="true"]')?.remove();
+  document.querySelector('.domnai-main-area')?.classList.remove('feedback-page-open');
+  document.querySelector('[data-domnai-feedback-menu="true"]')?.classList.remove('is-active');
+}
+
+function installFeedbackPremiumVisualGuard() {
+  if (document.querySelector('[data-domnai-feedback-premium-visual-guard]')) return;
+
+  const style = document.createElement('style');
+  style.dataset.domnaiFeedbackPremiumVisualGuard = 'true';
+  style.textContent = `
+    .domnai-feedback-menu-button,
+    .domnai-feedback-menu-button:hover,
+    .domnai-feedback-menu-button:focus,
+    .domnai-feedback-menu-button:active,
+    .domnai-feedback-menu-button.is-active,
+    .domnai-feedback-menu-button .domnai-feedback-menu-label,
+    .domnai-feedback-menu-button:hover .domnai-feedback-menu-label,
+    .domnai-feedback-menu-button:focus .domnai-feedback-menu-label,
+    .domnai-feedback-menu-button:active .domnai-feedback-menu-label,
+    .domnai-feedback-menu-button.is-active .domnai-feedback-menu-label,
+    .domnai-feedback-menu-button.is-premium-locked .domnai-feedback-menu-label {
+      color: rgba(255, 255, 255, 0.62) !important;
+    }
+
+    .domnai-feedback-menu-button > span:first-child {
+      color: #d8aa34 !important;
+    }
+
+    .domnai-feedback-menu-button.is-premium-locked,
+    .domnai-feedback-menu-button.is-premium-locked:hover,
+    .domnai-feedback-menu-button.is-premium-locked:focus,
+    .domnai-feedback-menu-button.is-premium-locked:active {
+      border-color: transparent !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    .domnai-feedback-menu-button > small {
+      display: none !important;
+      pointer-events: none !important;
+      color: #e7c35e !important;
+    }
+
+    html.domnai-access-free .domnai-feedback-menu-button.is-premium-locked > small {
+      display: inline-flex !important;
+    }
+
+    .domnai-feedback-premium-notice,
+    [data-feedback-premium-notice] {
+      display: none !important;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+document.addEventListener('click', closeFeedbackBeforeProfile, true);
+installFeedbackPremiumVisualGuard();

@@ -1,0 +1,227 @@
+body:has(.domnai-main-area.feedback-page-open) {
+  overflow: hidden !important;
+}
+
+.domnai-feedback-page {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 5000 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100vh !important;
+  margin: 0 !important;
+  padding: 20px !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow-y: auto !important;
+  background: rgba(0, 0, 0, 0.72) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  -webkit-overflow-scrolling: touch;
+  box-sizing: border-box;
+}
+
+.domnai-feedback-dialog {
+  width: min(94vw, 920px);
+  max-height: calc(100vh - 40px);
+  padding: 18px 20px 16px;
+  overflow-y: auto;
+  border: 1px solid rgba(216, 170, 52, 0.2);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(17, 17, 17, 0.99), rgba(8, 8, 8, 0.99));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.62);
+  box-sizing: border-box;
+}
+
+.domnai-feedback-header,
+.domnai-feedback-form,
+.domnai-feedback-history-toggle,
+.domnai-feedback-history-card {
+  width: 100% !important;
+  max-width: none !important;
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+}
+
+.domnai-feedback-header {
+  position: relative !important;
+  min-height: 38px;
+  padding: 0 66px 12px 0 !important;
+}
+
+.domnai-feedback-header h1 {
+  font-size: 1.35rem !important;
+}
+
+.domnai-feedback-back {
+  position: absolute !important;
+  top: 6px !important;
+  right: 0 !important;
+  z-index: 5 !important;
+  width: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  font: 700 0.78rem/1 Inter, system-ui, sans-serif !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer !important;
+}
+
+.domnai-feedback-back:hover,
+.domnai-feedback-back:focus,
+.domnai-feedback-back:focus-visible,
+.domnai-feedback-back:active {
+  background: transparent !important;
+  color: #e7c35e !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+.domnai-feedback-menu-button.is-active,
+.domnai-feedback-menu-button.is-active:hover,
+.domnai-feedback-menu-button.is-active:focus,
+.domnai-feedback-menu-button.is-active:focus-visible,
+.domnai-feedback-menu-button.is-active:active {
+  border-color: rgba(216, 170, 52, 0.34) !important;
+  background: rgba(216, 170, 52, 0.12) !important;
+  color: #e7c35e !important;
+  text-decoration: none !important;
+  outline: none !important;
+}
+
+.domnai-feedback-menu-button.is-active > span {
+  color: #e7c35e !important;
+}
+
+.domnai-feedback-form {
+  margin-top: 14px !important;
+  padding: 4px 0 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  display: grid !important;
+  grid-template-columns: minmax(230px, 0.82fr) minmax(360px, 1.18fr);
+  grid-template-areas:
+    "intro field"
+    "rating field"
+    "types field"
+    "suggestion field"
+    ". message"
+    ". submit";
+  column-gap: 26px;
+  row-gap: 10px;
+  align-items: start;
+}
+
+.domnai-feedback-intro {
+  grid-area: intro;
+  margin: 0 0 4px !important;
+  text-align: left !important;
+}
+
+.domnai-feedback-intro h2 {
+  font-size: 1rem !important;
+}
+
+.domnai-feedback-rating-fieldset {
+  grid-area: rating;
+}
+
+.domnai-feedback-type-fieldset {
+  grid-area: types;
+}
+
+.domnai-feedback-suggestion-options {
+  grid-area: suggestion;
+  justify-content: flex-start !important;
+  margin-top: 0 !important;
+}
+
+.domnai-feedback-rating,
+.domnai-feedback-types {
+  justify-content: flex-start !important;
+}
+
+.domnai-feedback-rating-caption {
+  margin-bottom: 8px !important;
+  text-align: left !important;
+}
+
+.domnai-feedback-field {
+  grid-area: field;
+  margin-top: 0 !important;
+  align-self: stretch;
+}
+
+.domnai-feedback-field textarea {
+  min-height: 178px !important;
+  height: 100%;
+  resize: vertical;
+}
+
+.domnai-feedback-form-message {
+  grid-area: message;
+  margin-top: 0 !important;
+}
+
+.domnai-feedback-submit {
+  grid-area: submit;
+  margin-top: 2px !important;
+}
+
+.domnai-feedback-history-toggle {
+  width: auto !important;
+  margin: 12px auto 0 !important;
+}
+
+.domnai-feedback-history-card {
+  margin-top: 10px !important;
+}
+
+@media (max-width: 760px) {
+  .domnai-feedback-page {
+    padding: 12px !important;
+  }
+
+  .domnai-feedback-dialog {
+    width: min(100%, 620px);
+    max-height: calc(100vh - 24px);
+    padding: 16px 14px 14px;
+    border-radius: 17px;
+  }
+
+  .domnai-feedback-form {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "intro"
+      "rating"
+      "types"
+      "suggestion"
+      "field"
+      "message"
+      "submit";
+    gap: 10px;
+  }
+
+  .domnai-feedback-intro {
+    text-align: center !important;
+  }
+
+  .domnai-feedback-rating,
+  .domnai-feedback-types,
+  .domnai-feedback-suggestion-options {
+    justify-content: center !important;
+  }
+
+  .domnai-feedback-rating-caption {
+    text-align: center !important;
+  }
+
+  .domnai-feedback-field textarea {
+    min-height: 132px !important;
+  }
+}

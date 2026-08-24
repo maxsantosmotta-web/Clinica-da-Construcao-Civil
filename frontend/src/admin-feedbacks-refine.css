@@ -1,0 +1,158 @@
+.domnai-admin-topbar.is-empty {
+  display: none;
+}
+
+.domnai-admin-context-spacer {
+  display: none;
+}
+
+.domnai-admin-sidebar nav button.active-section {
+  border-color: rgba(231, 195, 94, 0.28);
+  background: rgba(231, 195, 94, 0.09);
+  color: #e7c35e;
+}
+
+.domnai-admin-sidebar nav button.active-section > span {
+  color: #e7c35e;
+}
+
+.domnai-admin-feedbacks-view {
+  gap: 12px;
+  padding-top: 18px;
+}
+
+.domnai-admin-feedbacks-heading {
+  min-height: 20px;
+  justify-content: flex-end;
+  margin: 0 0 2px;
+}
+
+.domnai-admin-feedbacks-actions,
+.domnai-admin-feedback-list-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.domnai-admin-feedback-list-actions {
+  min-height: 18px;
+  margin-top: -2px;
+}
+
+.domnai-admin-feedbacks-actions button,
+.domnai-admin-feedback-list-actions button,
+.domnai-admin-feedback-item-actions button {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.domnai-admin-feedbacks-actions button:hover,
+.domnai-admin-feedbacks-actions button:focus,
+.domnai-admin-feedbacks-actions button:focus-visible,
+.domnai-admin-feedbacks-actions button:active,
+.domnai-admin-feedback-list-actions button:hover,
+.domnai-admin-feedback-list-actions button:focus,
+.domnai-admin-feedback-list-actions button:focus-visible,
+.domnai-admin-feedback-list-actions button:active,
+.domnai-admin-feedback-item-actions button:hover,
+.domnai-admin-feedback-item-actions button:focus,
+.domnai-admin-feedback-item-actions button:focus-visible,
+.domnai-admin-feedback-item-actions button:active {
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  text-decoration: none !important;
+  outline: none;
+}
+
+.domnai-admin-feedbacks-actions button:disabled,
+.domnai-admin-feedback-list-actions button:disabled,
+.domnai-admin-feedback-item-actions button:disabled {
+  color: #686868;
+  opacity: 1;
+  cursor: default;
+}
+
+.domnai-admin-feedback-list-actions .delete-all:not(:disabled),
+.domnai-admin-feedback-item-actions button:not(:disabled) {
+  color: #d8d8d8;
+}
+
+.domnai-admin-feedbacks-list {
+  grid-template-columns: 1fr !important;
+  max-height: 390px;
+  padding-right: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(231, 195, 94, 0.32) rgba(255, 255, 255, 0.03);
+}
+
+.domnai-admin-feedbacks-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.domnai-admin-feedbacks-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 999px;
+}
+
+.domnai-admin-feedbacks-list::-webkit-scrollbar-thumb {
+  background: rgba(231, 195, 94, 0.32);
+  border-radius: 999px;
+}
+
+.domnai-admin-feedback-item {
+  min-height: 116px;
+}
+
+.domnai-admin-feedback-item-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.domnai-admin-feedback-item > p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.domnai-admin-feedbacks-state.compact {
+  min-height: 120px;
+}
+
+@media (max-width: 820px) {
+  .domnai-admin-topbar:not(.is-empty) {
+    margin-bottom: 12px;
+  }
+
+  .domnai-admin-feedbacks-view {
+    padding-top: 16px;
+  }
+
+  .domnai-admin-feedbacks-heading {
+    min-height: 18px;
+  }
+
+  .domnai-admin-feedbacks-actions,
+  .domnai-admin-feedback-list-actions {
+    gap: 14px;
+  }
+
+  .domnai-admin-feedbacks-list {
+    max-height: 382px;
+  }
+}
