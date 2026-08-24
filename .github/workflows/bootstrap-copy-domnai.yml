@@ -1,0 +1,33 @@
+name: Bootstrap copy from DomnAI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout destination repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Copy DomnAI source into this independent repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/maxsantosmotta-web/domnai-backend.git /tmp/domnai-source
+          rm -rf /tmp/domnai-source/.git
+
+          find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+          cp -a /tmp/domnai-source/. .
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Bootstrap independent Clínica da Construção Civil from DomnAI base"
+          git push origin HEAD:main
