@@ -28,11 +28,7 @@
   transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
 }
 
-.domnai-admin-signout-button span {
-  color: #4fe1c2;
-  font-size: 1rem;
-}
-
+.domnai-admin-signout-button span { color: #4fe1c2; font-size: 1rem; }
 .domnai-admin-signout-button:hover,
 .domnai-admin-signout-button:focus-visible {
   border-color: rgba(79, 225, 194, 0.38);
@@ -67,34 +63,12 @@
   font-weight: 900;
 }
 
-.domnai-admin-profile-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.domnai-admin-profile-copy {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
+.domnai-admin-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.domnai-admin-profile-copy { min-width: 0; display: grid; gap: 3px; }
 .domnai-admin-profile-copy strong,
-.domnai-admin-profile-copy small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.domnai-admin-profile-copy strong {
-  color: #f1fffb;
-  font-size: 0.78rem;
-}
-
-.domnai-admin-profile-copy small {
-  color: #7f9b93;
-  font-size: 0.62rem;
-}
+.domnai-admin-profile-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.domnai-admin-profile-copy strong { color: #f1fffb; font-size: 0.78rem; }
+.domnai-admin-profile-copy small { color: #7f9b93; font-size: 0.62rem; }
 
 .domnai-admin-profile-role {
   padding: 4px 7px;
@@ -118,16 +92,46 @@
   box-shadow: none;
 }
 
-.domnai-admin-gate-page[aria-busy="true"] .domnai-admin-gate-card.compact > p {
-  display: none;
-}
-
+.domnai-admin-gate-page[aria-busy="true"] .domnai-admin-gate-card.compact > p { display: none; }
 .domnai-admin-gate-page[aria-busy="true"] .domnai-admin-gate-card.compact > img,
-.domnai-admin-gate-card.compact:not(:has(p)):not(:has(h1)) > img {
-  margin-bottom: 10px;
+.domnai-admin-gate-card.compact:not(:has(p)):not(:has(h1)) > img { margin-bottom: 10px; }
+.domnai-admin-gate-page[aria-busy="true"] .domnai-admin-gate-card.compact .domnai-admin-spinner,
+.domnai-admin-gate-card.compact:not(:has(p)):not(:has(h1)) .domnai-admin-spinner { margin: 0 auto; }
+
+/* Fonte final do tema ADM: este arquivo é importado por último no AdminAccessBoundary. */
+.domnai-admin-shell,
+.domnai-admin-workspace {
+  background: #071311 !important;
+  color: #f7fffd !important;
 }
 
-.domnai-admin-gate-page[aria-busy="true"] .domnai-admin-gate-card.compact .domnai-admin-spinner,
-.domnai-admin-gate-card.compact:not(:has(p)):not(:has(h1)) .domnai-admin-spinner {
-  margin: 0 auto;
+.domnai-admin-sidebar {
+  background: linear-gradient(180deg, #081714 0%, #0b1d19 100%) !important;
+  border-right-color: rgba(58, 220, 188, .18) !important;
+}
+
+.domnai-admin-brand { border-bottom-color: rgba(58, 220, 188, .12) !important; }
+.domnai-admin-brand > span,
+.domnai-admin-topbar span:first-child,
+.domnai-admin-foundation-kicker { color: #4fe1c2 !important; }
+
+.domnai-admin-sidebar nav button.active {
+  border-color: rgba(79, 225, 194, .20) !important;
+  background: linear-gradient(135deg, rgba(32, 182, 151, .18), rgba(42, 218, 193, .08)) !important;
+  color: #57e4c7 !important;
+}
+.domnai-admin-sidebar nav button.active span { color: #57e4c7 !important; }
+
+.domnai-admin-open-menu,
+.domnai-admin-close-menu,
+.domnai-admin-back-user {
+  border-color: rgba(79, 225, 194, .20) !important;
+  background: #0a1b17 !important;
+  color: #4fe1c2 !important;
+}
+
+/* Os cards de gráficos continuam pretos, como solicitado. */
+.domnai-premium-chart-card {
+  background: #030504 !important;
+  border-color: rgba(79, 225, 194, .12) !important;
 }
