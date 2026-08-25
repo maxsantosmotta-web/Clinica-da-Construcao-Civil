@@ -67,7 +67,7 @@ async function clinicBillingReturn(event) {
   const backButton = event?.currentTarget;
   if (backButton) {
     backButton.disabled = true;
-    backButton.textContent = 'Voltando...';
+    backButton.textContent = 'Saindo...';
   }
 
   try {
@@ -148,7 +148,7 @@ function renderClinicBilling(section) {
         <p class="clinic-plan-saving" aria-live="polite"></p>
       </section>
 
-      <button type="button" class="clinic-billing-back">Voltar</button>
+      <button type="button" class="clinic-billing-back">Sair</button>
     </div>
   `;
 
