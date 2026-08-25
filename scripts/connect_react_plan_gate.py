@@ -119,7 +119,11 @@ if 'function ProtectedDashboard()' not in source:
         billingButton.click();
       }
 
-      if (document.querySelector('.billing-plans-section')) {
+      if (
+        document.querySelector('.clinic-billing-page')
+        || document.querySelector('.clinic-plan-card')
+        || document.querySelector('.billing-plans-section')
+      ) {
         setScreenReady(true);
         return;
       }
