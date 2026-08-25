@@ -10,6 +10,7 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 ADMIN_CREDITS = 100000
 ADMIN_TRANSACTION_KIND = "admin_credit"
 ADMIN_TRANSACTION_DESCRIPTION = "Créditos administrativos do proprietário"
+CLINIC_OWNER_USER_ID = "user_3IO0iCF2RnRzluAa4NWzKxhjTmJ"
 
 
 def _admin_marker(db, user_id: str) -> str | None:
@@ -48,7 +49,43 @@ def _can_migrate_legacy_admin(db, account: BillingAccount | None) -> bool:
     return bool(not _any_admin_marker(db) and _is_legacy_admin_account(account))
 
 
+def _ensure_clinic_owner_access(user_id: str) -> None:
+    if user_id != CLINIC_OWNER_USER_ID:
+        return
+
+    with session_scope() as db:
+        account = db.get(BillingAccount, user_id)
+        if account is None:
+            account = BillingAccount(
+                user_id=user_id,
+                plan="premium",
+                subscription_status="active",
+                plan_credits=ADMIN_CREDITS,
+                extra_credits=0,
+                current_period_end=None,
+            )
+            db.add(account)
+            db.flush()
+        else:
+            account.plan = "premium"
+            account.subscription_status = "active"
+            account.plan_credits = max(account.plan_credits, ADMIN_CREDITS)
+            account.current_period_end = None
+
+        if not _admin_marker(db, user_id):
+            db.add(CreditTransaction(
+                user_id=user_id,
+                kind=ADMIN_TRANSACTION_KIND,
+                amount=0,
+                plan_balance=account.plan_credits,
+                extra_balance=account.extra_credits,
+                description=ADMIN_TRANSACTION_DESCRIPTION,
+            ))
+
+
 def _has_persisted_admin_access(user_id: str) -> bool:
+    _ensure_clinic_owner_access(user_id)
+
     with session_scope() as db:
         account = db.get(BillingAccount, user_id)
         if account is None:
@@ -58,6 +95,8 @@ def _has_persisted_admin_access(user_id: str) -> bool:
 
 
 def _grant_admin_access(user_id: str) -> dict:
+    _ensure_clinic_owner_access(user_id)
+
     with session_scope() as db:
         account = db.get(BillingAccount, user_id)
         if account is None:
