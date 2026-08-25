@@ -55,6 +55,7 @@ COPY scripts/apply_final_operation_catalog.py /tmp/apply_final_operation_catalog
 COPY scripts/connect_sent_message_editing.py /tmp/connect_sent_message_editing.py
 COPY scripts/stabilize_artifact_build.py /tmp/stabilize_artifact_build.py
 COPY scripts/finalize_single_artifact_delivery.py /tmp/finalize_single_artifact_delivery.py
+COPY scripts/connect_course_video_upload_route.py /tmp/connect_course_video_upload_route.py
 COPY scripts/validate_frontend_dist.py /tmp/validate_frontend_dist.py
 RUN apk add --no-cache python3 imagemagick \
     && python3 /tmp/connect_domnai_chat.py \
@@ -108,6 +109,7 @@ RUN apk add --no-cache python3 imagemagick \
     && python3 /tmp/connect_sent_message_editing.py \
     && python3 /tmp/stabilize_artifact_build.py \
     && python3 /tmp/finalize_single_artifact_delivery.py \
+    && python3 /tmp/connect_course_video_upload_route.py \
     && npm run build \
     && python3 /tmp/validate_frontend_dist.py
 
