@@ -61,15 +61,30 @@ async function clinicCheckout(button) {
   }
 }
 
-function clinicBillingReturn(event) {
+async function clinicBillingReturn(event) {
   event?.preventDefault();
-  const dashboardButton = [...document.querySelectorAll('.sidebar-navigation button')]
-    .find((button) => button.textContent.trim().includes('Dashboard'));
-  if (dashboardButton) {
-    dashboardButton.click();
-    return;
+
+  const backButton = event?.currentTarget;
+  if (backButton) {
+    backButton.disabled = true;
+    backButton.textContent = 'Voltando...';
   }
-  window.location.hash = '#/';
+
+  try {
+    if (typeof window.domnaiSafeSignOut === 'function') {
+      await window.domnaiSafeSignOut();
+      return;
+    }
+
+    if (window.Clerk?.signOut) {
+      await window.Clerk.signOut();
+    }
+  } catch (_) {
+    // Mesmo se o sign-out auxiliar falhar, força retorno para a entrada pública.
+  }
+
+  window.location.replace(`${window.location.origin}${window.location.pathname}#/`);
+  window.location.reload();
 }
 
 function setClinicBillingPeriod(section, period) {
