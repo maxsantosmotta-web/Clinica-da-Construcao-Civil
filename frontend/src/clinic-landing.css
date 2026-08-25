@@ -1,0 +1,227 @@
+/* Clínica da Construção Civil — identidade visual da landing pública */
+
+.landing-page {
+  min-height: 100vh !important;
+  background: #020807 !important;
+  padding: 34px 22px 26px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.landing-card {
+  width: min(100%, 560px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.landing-card .official-logo {
+  width: min(78vw, 390px) !important;
+  aspect-ratio: 1 / 1 !important;
+  object-fit: cover !important;
+  display: block !important;
+  border-radius: 50% !important;
+  clip-path: circle(49% at 50% 50%) !important;
+  background: transparent !important;
+  filter: drop-shadow(0 0 18px rgba(0, 222, 255, 0.14)) !important;
+  margin: 0 auto !important;
+}
+
+.clinic-brand-copy {
+  width: min(100%, 520px);
+  margin: 18px auto 0;
+  text-align: center;
+}
+
+.clinic-brand-topline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  margin-bottom: 5px;
+  color: #f5f7f7;
+  font-size: clamp(0.95rem, 3.3vw, 1.25rem);
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.clinic-brand-topline::before,
+.clinic-brand-topline::after {
+  content: "";
+  width: clamp(34px, 10vw, 82px);
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #48ef55 0%, #00d8f5 100%);
+}
+
+.clinic-brand-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  line-height: 0.98;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+.clinic-brand-title .clinic-civil {
+  color: #00d8f5;
+}
+
+.clinic-brand-subtitle {
+  max-width: 500px;
+  margin: 18px auto 0;
+  color: #d7dfdd;
+  font-size: clamp(0.94rem, 3.2vw, 1.08rem);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+.landing-card .access-actions {
+  width: min(100%, 500px) !important;
+  display: grid !important;
+  gap: 14px !important;
+  margin-top: 28px !important;
+}
+
+.landing-card .primary-button,
+.landing-card .secondary-button {
+  position: relative !important;
+  min-height: 62px !important;
+  border-radius: 18px !important;
+  padding: 0 62px 0 24px !important;
+  font-size: clamp(0.84rem, 2.8vw, 0.98rem) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.10em !important;
+  text-transform: uppercase !important;
+  box-shadow: none !important;
+}
+
+.landing-card .primary-button {
+  border: 1px solid rgba(64, 245, 107, 0.95) !important;
+  color: #00100f !important;
+  background: linear-gradient(100deg, #4af252 0%, #11e1c7 52%, #03c9ff 100%) !important;
+}
+
+.landing-card .secondary-button {
+  border: 1.5px solid #00cfee !important;
+  color: #f7fbfb !important;
+  background: transparent !important;
+}
+
+.clinic-button-arrow {
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-52%);
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.primary-button .clinic-button-arrow {
+  color: #00100f;
+}
+
+.secondary-button .clinic-button-arrow {
+  color: #00d8f5;
+}
+
+.landing-footer {
+  margin-top: 26px !important;
+  gap: 0 !important;
+  align-items: center !important;
+}
+
+.landing-footer a {
+  color: #74807d !important;
+  font-size: 0.88rem !important;
+  text-decoration: none !important;
+}
+
+.landing-footer a + a::before {
+  content: "|";
+  display: inline-block;
+  margin: 0 17px;
+  color: #61706c;
+}
+
+@media (max-width: 520px) {
+  .landing-page {
+    padding: 24px 18px 22px !important;
+    justify-content: center !important;
+  }
+
+  .landing-card .official-logo {
+    width: min(76vw, 330px) !important;
+  }
+
+  .clinic-brand-copy {
+    margin-top: 14px;
+  }
+
+  .clinic-brand-topline {
+    gap: 9px;
+    letter-spacing: 0.20em;
+  }
+
+  .clinic-brand-title {
+    font-size: clamp(1.85rem, 9.2vw, 2.65rem);
+  }
+
+  .clinic-brand-subtitle {
+    margin-top: 14px;
+    max-width: 390px;
+  }
+
+  .landing-card .access-actions {
+    margin-top: 24px !important;
+  }
+
+  .landing-card .primary-button,
+  .landing-card .secondary-button {
+    min-height: 58px !important;
+    border-radius: 16px !important;
+  }
+
+  .landing-footer {
+    margin-top: 22px !important;
+  }
+
+  .landing-footer a + a::before {
+    margin: 0 11px;
+  }
+}
+
+@media (max-height: 760px) {
+  .landing-page {
+    justify-content: flex-start !important;
+    padding-top: 24px !important;
+  }
+
+  .landing-card .official-logo {
+    width: min(61vw, 280px) !important;
+  }
+
+  .clinic-brand-subtitle {
+    margin-top: 11px;
+  }
+
+  .landing-card .access-actions {
+    margin-top: 18px !important;
+  }
+
+  .landing-footer {
+    margin-top: 18px !important;
+  }
+}
