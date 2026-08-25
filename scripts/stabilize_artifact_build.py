@@ -166,6 +166,73 @@ def fix_clinic_learning_ui() -> None:
     print('Clínica: logo alinhado à esquerda e recortado sem fundo quadrado; foto persistente e rolagem móvel isolada.')
 
 
+def fix_clinic_admin_branding() -> None:
+    admin_jsx = Path('/frontend/src/AdminAccessBoundary.jsx')
+    admin_css = Path('/frontend/src/admin-access-boundary.css')
+    app_jsx = Path('/frontend/src/App.jsx')
+
+    if admin_jsx.exists():
+        source = admin_jsx.read_text(encoding='utf-8')
+        old_import = "import DOMNAI_LOGO from './assets/domnai-logo-oficial-transparente.png';"
+        clinic_import = "import CLINIC_LOGO from './assets/clinic-logo-data.js';"
+        if old_import in source:
+            source = source.replace(old_import, clinic_import, 1)
+        elif clinic_import not in source:
+            first_import_end = source.find('\n')
+            source = source[:first_import_end + 1] + clinic_import + '\n' + source[first_import_end + 1:]
+        source = source.replace('src={DOMNAI_LOGO}', 'src={CLINIC_LOGO}')
+        source = source.replace('alt="DomnAI"', 'alt="Clínica da Construção Civil"')
+        source = source.replace('DomnAI · Administração', 'Clínica da Construção Civil · Administração')
+        source = source.replace("email || 'Conta DomnAI'", "email || 'Clínica da Construção Civil'")
+        admin_jsx.write_text(source, encoding='utf-8')
+
+    if app_jsx.exists():
+        source = app_jsx.read_text(encoding='utf-8')
+        clinic_import = "import CLINIC_LOGO from './assets/clinic-logo-data.js';"
+        if clinic_import not in source:
+            domnai_import = "import DOMNAI_LOGO from './assets/domnai-logo-oficial-transparente.png';"
+            if domnai_import in source:
+                source = source.replace(domnai_import, domnai_import + '\n' + clinic_import, 1)
+        landing_start = source.find('function Landing()')
+        landing_end = source.find('\nfunction Home()', landing_start)
+        if landing_start >= 0 and landing_end > landing_start:
+            landing = source[landing_start:landing_end]
+            landing = landing.replace('src={DOMNAI_LOGO}', 'src={CLINIC_LOGO}', 1)
+            landing = landing.replace('DomnAI — Transforme escolhas em resultados com inteligência.', 'Clínica da Construção Civil', 1)
+            source = source[:landing_start] + landing + source[landing_end:]
+        app_jsx.write_text(source, encoding='utf-8')
+
+    if admin_css.exists():
+        css = admin_css.read_text(encoding='utf-8')
+        marker = '/* clinic-admin-theme-v1 */'
+        if marker not in css:
+            css += '''
+/* clinic-admin-theme-v1 */
+.domnai-admin-gate-page,.domnai-admin-shell{background:#001b17!important;color:#f4fffc}
+.domnai-admin-sidebar{background:linear-gradient(180deg,#00251f 0%,#001914 100%)!important;border-right-color:rgba(47,225,183,.18)!important}
+.domnai-admin-workspace{background:#001b17!important}
+.domnai-admin-brand{border-bottom-color:rgba(47,225,183,.16)!important;text-align:left}
+.domnai-admin-brand img{width:92px!important;height:92px!important;max-width:92px!important;max-height:92px!important;object-fit:cover!important;object-position:center!important;clip-path:circle(43% at 50% 50%);mix-blend-mode:screen;filter:saturate(1.08) contrast(1.05)}
+.domnai-admin-brand>span,.domnai-admin-topbar span:first-child,.domnai-admin-foundation-kicker{color:#35d9b3!important}
+.domnai-admin-sidebar nav button.active{border-color:rgba(47,225,183,.42)!important;background:linear-gradient(90deg,rgba(47,225,183,.15),rgba(47,225,183,.05))!important;color:#75f1d5!important}
+.domnai-admin-sidebar nav button.active span{color:#35d9b3!important}
+.domnai-admin-open-menu,.domnai-admin-close-menu,.domnai-admin-back-user{border-color:rgba(47,225,183,.32)!important;background:#05251f!important;color:#64e6c7!important}
+.domnai-admin-open-menu:hover,.domnai-admin-close-menu:hover,.domnai-admin-back-user:hover{background:rgba(47,225,183,.12)!important;border-color:rgba(47,225,183,.58)!important}
+.domnai-admin-gate-card{border-color:rgba(47,225,183,.28)!important;background:linear-gradient(180deg,rgba(3,38,31,.98),rgba(1,23,19,.98))!important}
+.domnai-admin-gate-card>img{width:116px!important;height:116px!important;max-height:116px!important;object-fit:cover!important;clip-path:circle(43% at 50% 50%);mix-blend-mode:screen}
+.domnai-admin-spinner{border-color:rgba(47,225,183,.18)!important;border-top-color:#35d9b3!important}
+.domnai-overview-hero{background:linear-gradient(135deg,rgba(8,52,43,.96),rgba(4,29,25,.98))!important;border-color:rgba(47,225,183,.18)!important}
+.domnai-overview-metrics article{background:linear-gradient(180deg,#071c18,#04130f)!important;border-color:rgba(47,225,183,.12)!important}
+.domnai-premium-chart-card{background:#050706!important;border-color:rgba(47,225,183,.12)!important}
+.domnai-premium-chart-card::before{background:transparent!important}
+.domnai-admin-premium-heading button{border-color:rgba(47,225,183,.28)!important;background:#05251f!important;color:#76efd5!important}
+@media(max-width:820px){.domnai-admin-brand img{width:84px!important;height:84px!important;max-width:84px!important;max-height:84px!important}}
+'''
+        admin_css.write_text(css, encoding='utf-8')
+
+    print('Clínica: ADM com identidade verde/turquesa, logo da Clínica, gráficos em fundo preto e transições sem logo DomnAI.')
+
+
 def stabilize_runtime_patch() -> None:
     path = Path('/tmp/finalize_new_core_only.py')
     if not path.exists():
@@ -194,4 +261,5 @@ def stabilize_runtime_patch() -> None:
 stabilize_frontend()
 connect_clinic_learning_dashboard()
 fix_clinic_learning_ui()
+fix_clinic_admin_branding()
 stabilize_runtime_patch()
