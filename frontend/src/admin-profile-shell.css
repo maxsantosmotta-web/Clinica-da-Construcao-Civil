@@ -152,3 +152,36 @@ html body .domnai-admin-shell .domnai-premium-chart-card {
   background: #030504 !important;
   border-color: rgba(79, 225, 194, .12) !important;
 }
+
+/* Perfil do ADM integrado ao menu da Clínica, sem bloco preto destacado. */
+html body .domnai-admin-shell .domnai-admin-sidebar-footer {
+  background: transparent !important;
+  border-top-color: rgba(79, 225, 194, .14) !important;
+  padding: 12px 4px 0 !important;
+  gap: 4px !important;
+}
+
+html body .domnai-admin-shell .domnai-admin-profile-card {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 8px 4px !important;
+  min-height: 54px !important;
+}
+
+html body .domnai-admin-shell .domnai-admin-signout-button {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  padding: 0 4px !important;
+  min-height: 36px !important;
+  color: #b9d0c9 !important;
+}
+
+html body .domnai-admin-shell .domnai-admin-signout-button:hover,
+html body .domnai-admin-shell .domnai-admin-signout-button:focus-visible {
+  background: rgba(79, 225, 194, .08) !important;
+  color: #75f1d5 !important;
+}
