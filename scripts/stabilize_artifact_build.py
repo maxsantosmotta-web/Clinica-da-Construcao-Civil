@@ -24,7 +24,7 @@ def stabilize_frontend() -> None:
     body_marker = "body: JSON.stringify({"
     body_start = source.find(body_marker, request_start)
     if body_start < 0:
-        raise RuntimeError('Payload JSON de /api/chat/respond não localizado no Dashboard final.')
+        raise RuntimeError('Payload JSON de /api/chat/respond não localizado.')
 
     request_end = source.find("      });", body_start)
     if request_end < 0:
@@ -155,14 +155,15 @@ def fix_clinic_learning_ui() -> None:
     if marker not in css:
         css += '''
 /* clinic-mobile-fixes-v1 */
-.clinic-course-brand img{width:100%;max-width:230px;height:auto;max-height:92px;object-fit:contain;mix-blend-mode:screen;filter:saturate(1.08) contrast(1.04)}
+.clinic-course-brand{justify-content:flex-start;position:relative;padding-left:0}
+.clinic-course-brand img{width:96px;max-width:96px;height:96px;max-height:96px;object-fit:cover;object-position:center;mix-blend-mode:screen;clip-path:circle(42% at 50% 50%);margin-left:-14px;filter:saturate(1.08) contrast(1.04)}
 .clinic-course-sidebar{overscroll-behavior:contain;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
 .clinic-sidebar-backdrop{touch-action:none;overscroll-behavior:none}
 .clinic-course-shell{overflow-x:hidden}
-@media(max-width:820px){.clinic-course-sidebar{height:100dvh;max-height:100dvh;overscroll-behavior:contain}.clinic-course-brand{flex:0 0 auto}.clinic-course-navigation{flex:0 0 auto}.clinic-course-account{flex:0 0 auto}.clinic-course-brand img{max-width:235px;max-height:96px}}
+@media(max-width:820px){.clinic-course-sidebar{height:100dvh;max-height:100dvh;overscroll-behavior:contain}.clinic-course-brand{flex:0 0 auto;justify-content:flex-start;padding-left:0}.clinic-course-navigation{flex:0 0 auto}.clinic-course-account{flex:0 0 auto}.clinic-course-brand img{width:96px;max-width:96px;height:96px;max-height:96px;margin-left:-14px}.clinic-sidebar-close{position:absolute;right:4px;top:24px}}
 '''
     css_path.write_text(css, encoding='utf-8')
-    print('Clínica: foto persistente no menu, rolagem móvel isolada e logo sem bloco preto aparente.')
+    print('Clínica: logo alinhado à esquerda e recortado sem fundo quadrado; foto persistente e rolagem móvel isolada.')
 
 
 def stabilize_runtime_patch() -> None:
