@@ -20,6 +20,7 @@ if 'function ProtectedDashboard()' not in source:
   const [billingStatus, setBillingStatus] = useState(null);
   const [billingError, setBillingError] = useState('');
   const [screenReady, setScreenReady] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -38,6 +39,19 @@ if 'function ProtectedDashboard()' not in source:
             continue;
           }
 
+          const accessResponse = await fetch('/api/auth/access-mode', {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+            signal: controller.signal,
+          });
+
+          if (accessResponse.ok) {
+            const access = await accessResponse.json().catch(() => ({}));
+            if (active && access?.isAdmin === true) {
+              setIsAdmin(true);
+            }
+          }
+
           const response = await fetch('/api/billing/status', {
             headers: { Authorization: `Bearer ${token}` },
             cache: 'no-store',
@@ -46,9 +60,13 @@ if 'function ProtectedDashboard()' not in source:
 
           if (response.ok) {
             const status = await response.json();
+            const adminAccess = active && window.__clinicAdminAccess === true;
+            const normalizedStatus = adminAccess
+              ? { ...status, profileCompleted: true }
+              : status;
             if (active) {
-              window.__domnaiBillingStatus = status;
-              setBillingStatus(status);
+              window.__domnaiBillingStatus = normalizedStatus;
+              setBillingStatus(normalizedStatus);
             }
             return;
           }
@@ -82,19 +100,33 @@ if 'function ProtectedDashboard()' not in source:
   useEffect(() => {
     const handleBillingUpdate = (event) => {
       if (!event.detail) return;
-      window.__domnaiBillingStatus = event.detail;
-      setBillingStatus(event.detail);
+      const detail = window.__clinicAdminAccess === true
+        ? { ...event.detail, profileCompleted: true }
+        : event.detail;
+      window.__domnaiBillingStatus = detail;
+      setBillingStatus(detail);
+    };
+
+    const handleAdminAccess = (event) => {
+      if (event.detail?.isAdmin !== true) return;
+      window.__clinicAdminAccess = true;
+      setIsAdmin(true);
+      setBillingStatus((current) => current ? { ...current, profileCompleted: true } : current);
     };
 
     window.addEventListener('domnai:billing-updated', handleBillingUpdate);
-    return () => window.removeEventListener('domnai:billing-updated', handleBillingUpdate);
+    window.addEventListener('clinic:admin-access', handleAdminAccess);
+    return () => {
+      window.removeEventListener('domnai:billing-updated', handleBillingUpdate);
+      window.removeEventListener('clinic:admin-access', handleAdminAccess);
+    };
   }, []);
 
   const planSelected = Boolean(
     billingStatus?.plan && !['unselected', 'free_demo'].includes(billingStatus.plan),
   );
   const profileCompleted = Boolean(billingStatus?.profileCompleted);
-  const accessReady = planSelected && profileCompleted;
+  const accessReady = isAdmin || (planSelected && profileCompleted);
 
   useEffect(() => {
     if (!billingStatus) return undefined;
