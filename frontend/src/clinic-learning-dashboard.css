@@ -17,3 +17,10 @@
 .clinic-lesson-card.is-complete .clinic-cover-play{background:linear-gradient(145deg,#65f0d1,#36c9aa)}
 .clinic-lesson-copy h2{line-height:1.35}
 @media(max-width:820px){.clinic-lessons-grid{grid-template-columns:1fr}.clinic-lesson-cover>img{top:-145%}.clinic-cover-play{width:58px;height:58px;font-size:1.3rem}}
+
+/* lesson-cover-approved-v2 */
+.clinic-lesson-cover{background:#020806 url('./assets/clinic-lesson-cover.webp') center/cover no-repeat!important}
+.clinic-lesson-cover>img{display:none!important}
+.clinic-lesson-cover:after{display:none!important}
+.clinic-lesson-module-badge{display:none!important}
+.clinic-cover-play{display:none!important}
