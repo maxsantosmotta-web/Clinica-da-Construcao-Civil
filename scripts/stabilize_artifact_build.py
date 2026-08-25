@@ -111,6 +111,60 @@ def connect_clinic_learning_dashboard() -> None:
     print('Clínica: área de aprendizagem conectada ao Dashboard final com injeção resiliente.')
 
 
+def fix_clinic_learning_ui() -> None:
+    jsx_path = Path('/frontend/src/ClinicLearningDashboard.jsx')
+    css_path = Path('/frontend/src/clinic-learning-dashboard.css')
+    if not jsx_path.exists() or not css_path.exists():
+        return
+
+    source = jsx_path.read_text(encoding='utf-8')
+
+    old_profile_effect = '''  useEffect(() => {
+    if (section === 'perfil' && !profileLoaded) loadProfile();
+  }, [section, profileLoaded]);'''
+    new_profile_effect = '''  useEffect(() => {
+    if (!profileLoaded) loadProfile();
+  }, [profileLoaded]);'''
+    if old_profile_effect in source:
+        source = source.replace(old_profile_effect, new_profile_effect, 1)
+
+    scroll_lock = '''
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [mobileOpen]);
+'''
+    if 'previousBodyOverflow' not in source:
+        anchor = new_profile_effect
+        if anchor in source:
+            source = source.replace(anchor, anchor + scroll_lock, 1)
+        else:
+            raise RuntimeError('Efeito de carregamento do perfil não localizado na Clínica.')
+
+    jsx_path.write_text(source, encoding='utf-8')
+
+    css = css_path.read_text(encoding='utf-8')
+    marker = '/* clinic-mobile-fixes-v1 */'
+    if marker not in css:
+        css += '''
+/* clinic-mobile-fixes-v1 */
+.clinic-course-brand img{width:100%;max-width:230px;height:auto;max-height:92px;object-fit:contain;mix-blend-mode:screen;filter:saturate(1.08) contrast(1.04)}
+.clinic-course-sidebar{overscroll-behavior:contain;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.clinic-sidebar-backdrop{touch-action:none;overscroll-behavior:none}
+.clinic-course-shell{overflow-x:hidden}
+@media(max-width:820px){.clinic-course-sidebar{height:100dvh;max-height:100dvh;overscroll-behavior:contain}.clinic-course-brand{flex:0 0 auto}.clinic-course-navigation{flex:0 0 auto}.clinic-course-account{flex:0 0 auto}.clinic-course-brand img{max-width:235px;max-height:96px}}
+'''
+    css_path.write_text(css, encoding='utf-8')
+    print('Clínica: foto persistente no menu, rolagem móvel isolada e logo sem bloco preto aparente.')
+
+
 def stabilize_runtime_patch() -> None:
     path = Path('/tmp/finalize_new_core_only.py')
     if not path.exists():
@@ -138,4 +192,5 @@ def stabilize_runtime_patch() -> None:
 
 stabilize_frontend()
 connect_clinic_learning_dashboard()
+fix_clinic_learning_ui()
 stabilize_runtime_patch()
