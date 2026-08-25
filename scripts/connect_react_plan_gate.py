@@ -15,22 +15,29 @@ if 'function ProtectedDashboard()' not in source:
     if start == -1 or end == -1:
         raise RuntimeError('Não foi possível localizar o bloco Home em App.jsx.')
 
-    replacement = '''function ProtectedDashboard() {
+    replacement = '''const CLINIC_OWNER_USER_ID = 'user_3IO0iCF2RnRzluAa4NWzKxhjTmJ';
+
+function ProtectedDashboard() {
   const { getToken, userId } = useAuth();
+  const isOwner = userId === CLINIC_OWNER_USER_ID;
   const [billingStatus, setBillingStatus] = useState(null);
   const [billingError, setBillingError] = useState('');
-  const [screenReady, setScreenReady] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [screenReady, setScreenReady] = useState(isOwner);
 
   useEffect(() => {
+    if (isOwner) {
+      window.__clinicAdminAccess = true;
+      window.dispatchEvent(new CustomEvent('clinic:admin-access', { detail: { isAdmin: true } }));
+      setScreenReady(true);
+      return undefined;
+    }
+
     let active = true;
     const controller = new AbortController();
-
     const wait = (delay) => new Promise((resolve) => window.setTimeout(resolve, delay));
 
     async function loadBillingStatus() {
       setBillingError('');
-
       for (let attempt = 0; attempt < 20; attempt += 1) {
         try {
           const token = await getToken({ skipCache: attempt > 0 });
@@ -38,44 +45,23 @@ if 'function ProtectedDashboard()' not in source:
             await wait(150);
             continue;
           }
-
-          const accessResponse = await fetch('/api/auth/access-mode', {
-            headers: { Authorization: `Bearer ${token}` },
-            cache: 'no-store',
-            signal: controller.signal,
-          });
-
-          if (accessResponse.ok) {
-            const access = await accessResponse.json().catch(() => ({}));
-            if (active && access?.isAdmin === true) {
-              setIsAdmin(true);
-            }
-          }
-
           const response = await fetch('/api/billing/status', {
             headers: { Authorization: `Bearer ${token}` },
             cache: 'no-store',
             signal: controller.signal,
           });
-
           if (response.ok) {
             const status = await response.json();
-            const adminAccess = active && window.__clinicAdminAccess === true;
-            const normalizedStatus = adminAccess
-              ? { ...status, profileCompleted: true }
-              : status;
             if (active) {
-              window.__domnaiBillingStatus = normalizedStatus;
-              setBillingStatus(normalizedStatus);
+              window.__domnaiBillingStatus = status;
+              setBillingStatus(status);
             }
             return;
           }
-
           if (response.status === 401 || response.status === 403) {
             await wait(200 + (attempt * 50));
             continue;
           }
-
           throw new Error('Não foi possível validar seu cadastro e plano.');
         } catch (error) {
           if (error?.name === 'AbortError') return;
@@ -86,7 +72,6 @@ if 'function ProtectedDashboard()' not in source:
           await wait(200 + (attempt * 50));
         }
       }
-
       if (active) setBillingError('Sessão não confirmada. Entre novamente.');
     }
 
@@ -95,42 +80,27 @@ if 'function ProtectedDashboard()' not in source:
       active = false;
       controller.abort();
     };
-  }, [getToken, userId]);
+  }, [getToken, isOwner, userId]);
 
   useEffect(() => {
+    if (isOwner) return undefined;
     const handleBillingUpdate = (event) => {
       if (!event.detail) return;
-      const detail = window.__clinicAdminAccess === true
-        ? { ...event.detail, profileCompleted: true }
-        : event.detail;
-      window.__domnaiBillingStatus = detail;
-      setBillingStatus(detail);
+      window.__domnaiBillingStatus = event.detail;
+      setBillingStatus(event.detail);
     };
-
-    const handleAdminAccess = (event) => {
-      if (event.detail?.isAdmin !== true) return;
-      window.__clinicAdminAccess = true;
-      setIsAdmin(true);
-      setBillingStatus((current) => current ? { ...current, profileCompleted: true } : current);
-    };
-
     window.addEventListener('domnai:billing-updated', handleBillingUpdate);
-    window.addEventListener('clinic:admin-access', handleAdminAccess);
-    return () => {
-      window.removeEventListener('domnai:billing-updated', handleBillingUpdate);
-      window.removeEventListener('clinic:admin-access', handleAdminAccess);
-    };
-  }, []);
+    return () => window.removeEventListener('domnai:billing-updated', handleBillingUpdate);
+  }, [isOwner]);
 
   const planSelected = Boolean(
     billingStatus?.plan && !['unselected', 'free_demo'].includes(billingStatus.plan),
   );
   const profileCompleted = Boolean(billingStatus?.profileCompleted);
-  const accessReady = isAdmin || (planSelected && profileCompleted);
+  const accessReady = isOwner || (planSelected && profileCompleted);
 
   useEffect(() => {
-    if (!billingStatus) return undefined;
-
+    if (isOwner || !billingStatus) return undefined;
     if (accessReady) {
       setScreenReady(true);
       return undefined;
@@ -140,17 +110,11 @@ if 'function ProtectedDashboard()' not in source:
     let cancelled = false;
     let attempts = 0;
     let timer = null;
-
     const openBilling = () => {
       if (cancelled) return;
-
       const billingButton = [...document.querySelectorAll('.sidebar-navigation button')]
         .find((button) => button.textContent.trim().includes('Faturamento'));
-
-      if (billingButton && !billingButton.classList.contains('is-active')) {
-        billingButton.click();
-      }
-
+      if (billingButton && !billingButton.classList.contains('is-active')) billingButton.click();
       if (
         document.querySelector('.clinic-billing-page')
         || document.querySelector('.clinic-plan-card')
@@ -159,24 +123,21 @@ if 'function ProtectedDashboard()' not in source:
         setScreenReady(true);
         return;
       }
-
       attempts += 1;
       if (attempts >= 120) {
         setBillingError('Não foi possível abrir o faturamento.');
         return;
       }
-
       timer = window.setTimeout(openBilling, 50);
     };
-
     window.requestAnimationFrame(openBilling);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [billingStatus, accessReady]);
+  }, [billingStatus, accessReady, isOwner]);
 
-  if (billingError) {
+  if (billingError && !isOwner) {
     return (
       <main className="react-plan-gate-page" role="alert">
         <section className="react-plan-gate-card">
@@ -189,9 +150,7 @@ if 'function ProtectedDashboard()' not in source:
     );
   }
 
-  if (!billingStatus) {
-    return <main className="react-plan-gate-page" aria-busy="true" />;
-  }
+  if (!isOwner && !billingStatus) return <main className="react-plan-gate-page" aria-busy="true" />;
 
   return (
     <div className="react-plan-gate-wrapper">
@@ -210,27 +169,21 @@ function Home() {
       setSessionReady(false);
       return;
     }
-
     const key = `domnai:session-ready:${sessionId}`;
     if (sessionStorage.getItem(key) === 'true') {
       setSessionReady(true);
       return;
     }
-
     sessionStorage.setItem(key, 'true');
     window.location.replace(`${window.location.origin}${window.location.pathname}#/`);
     window.location.reload();
   }, [isLoaded, isSignedIn, sessionId]);
 
-  if (!isLoaded || (isSignedIn && !sessionReady)) {
-    return <main className="react-plan-gate-page" aria-busy="true" />;
-  }
-
+  if (!isLoaded || (isSignedIn && !sessionReady)) return <main className="react-plan-gate-page" aria-busy="true" />;
   if (isSignedIn) return <ProtectedDashboard />;
   return <Landing />;
 }
 '''
-
     source = source[:start] + replacement + source[end:]
 
 path.write_text(source, encoding='utf-8')
