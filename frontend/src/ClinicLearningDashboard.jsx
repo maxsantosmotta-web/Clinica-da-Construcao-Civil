@@ -36,7 +36,7 @@ function ProgressRing({ value }) {
   return <div className="clinic-progress-ring" style={{ '--progress': `${value * 3.6}deg` }}><span>{value}%</span></div>;
 }
 
-export default function ClinicLearningDashboard({ onOpenBilling }) {
+export default function ClinicLearningDashboard() {
   const { getToken } = useAuth();
   const [section, setSection] = useState('inicio');
   const [moduleFilter, setModuleFilter] = useState('Todos');
@@ -52,13 +52,10 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
 
   const progress = Math.round((completed.size / lessons.length) * 100);
   const isAdmin = window.__clinicAdminAccess === true;
-  const hasPaidAccess = isAdmin || Boolean(
-    billingStatus?.premiumActive
-    || (billingStatus?.plan === 'premium' && ['active', 'trialing'].includes(String(billingStatus?.subscriptionStatus || '').toLowerCase())),
-  );
 
   const storedCycle = localStorage.getItem('clinic:selected-plan-cycle');
-  const planCycleLabel = storedCycle === 'yearly' ? 'Anual' : storedCycle === 'monthly' ? 'Mensal' : 'Plano ativo';
+  const effectiveCycle = billingStatus?.billingCycle || storedCycle;
+  const planCycleLabel = effectiveCycle === 'yearly' ? 'Anual' : effectiveCycle === 'monthly' ? 'Mensal' : 'Plano ativo';
   const renewalLabel = billingStatus?.currentPeriodEnd
     ? new Date(billingStatus.currentPeriodEnd).toLocaleDateString('pt-BR')
     : null;
@@ -77,6 +74,7 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
         const payload = await response.json();
         if (!cancelled) {
           window.__domnaiBillingStatus = payload;
+          if (payload.billingCycle) localStorage.setItem('clinic:selected-plan-cycle', payload.billingCycle);
           setBillingStatus(payload);
         }
       } catch {
@@ -96,7 +94,6 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
     setMobileOpen(false);
     setBillingLoading(true);
     try {
-      let latest = billingStatus;
       const token = await getToken();
       if (token) {
         const response = await fetch('/api/billing/status', {
@@ -104,24 +101,17 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
           cache: 'no-store',
         });
         if (response.ok) {
-          latest = await response.json();
+          const latest = await response.json();
           window.__domnaiBillingStatus = latest;
+          if (latest.billingCycle) localStorage.setItem('clinic:selected-plan-cycle', latest.billingCycle);
           setBillingStatus(latest);
         }
       }
-
-      const paid = isAdmin || Boolean(
-        latest?.premiumActive
-        || (latest?.plan === 'premium' && ['active', 'trialing'].includes(String(latest?.subscriptionStatus || '').toLowerCase())),
-      );
-
-      if (paid) {
-        setSection('faturamento');
-      } else {
-        onOpenBilling?.();
-      }
+    } catch {
+      // Mantém a última informação conhecida sem retirar o usuário da área do aluno.
     } finally {
       setBillingLoading(false);
+      setSection('faturamento');
     }
   }
 
@@ -196,14 +186,14 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
 
         {section === 'faturamento' ? (
           <>
-            <header className="clinic-course-header"><span>Faturamento</span><h1>Seu plano</h1><p>Consulte a modalidade do seu acesso sem sair da área do aluno.</p></header>
+            <header className="clinic-course-header"><span>Faturamento</span><h1>Seu plano</h1><p>Consulte aqui a modalidade do seu acesso.</p></header>
             <section className="clinic-progress-card">
               <div className="clinic-material-type">{isAdmin ? 'ADMIN' : 'PLANO ATIVO'}</div>
               <div>
                 <h2>{isAdmin ? 'Acesso administrativo vitalício' : `Plano ${planCycleLabel}`}</h2>
-                <p>{isAdmin ? 'Seu perfil possui acesso permanente à Clínica da Construção Civil.' : `Assinatura ${planCycleLabel.toLowerCase()} ativa.`}</p>
+                <p>{isAdmin ? 'Seu perfil possui acesso permanente à Clínica da Construção Civil.' : `Sua assinatura é ${planCycleLabel.toLowerCase()}.`}</p>
                 {renewalLabel && !isAdmin ? <p>Próxima renovação/período: {renewalLabel}</p> : null}
-                <button type="button" onClick={() => navigate('inicio')}>Voltar</button>
+                <button type="button" onClick={() => navigate('inicio')}>Voltar ao início</button>
               </div>
             </section>
           </>
