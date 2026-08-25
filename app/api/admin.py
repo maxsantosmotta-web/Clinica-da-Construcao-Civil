@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 
@@ -10,6 +12,16 @@ router = APIRouter(prefix="/api/admin", tags=["admin"])
 ADMIN_CREDITS = 100000
 ADMIN_TRANSACTION_KIND = "admin_credit"
 ADMIN_TRANSACTION_DESCRIPTION = "Créditos administrativos do proprietário"
+DEFAULT_CLINIC_OWNER_USER_ID = "user_3IO0iCF2RnRzluAa4NWzKxhjTmJ"
+
+
+def _configured_owner_user_id() -> str:
+    return os.getenv("CLINIC_OWNER_USER_ID", DEFAULT_CLINIC_OWNER_USER_ID).strip()
+
+
+def _is_configured_owner(user_id: str) -> bool:
+    owner_user_id = _configured_owner_user_id()
+    return bool(owner_user_id and user_id == owner_user_id)
 
 
 def _admin_marker(db, user_id: str) -> str | None:
@@ -49,6 +61,9 @@ def _can_migrate_legacy_admin(db, account: BillingAccount | None) -> bool:
 
 
 def _has_persisted_admin_access(user_id: str) -> bool:
+    if _is_configured_owner(user_id):
+        return True
+
     with session_scope() as db:
         account = db.get(BillingAccount, user_id)
         if account is None:
@@ -60,12 +75,25 @@ def _has_persisted_admin_access(user_id: str) -> bool:
 def _grant_admin_access(user_id: str) -> dict:
     with session_scope() as db:
         account = db.get(BillingAccount, user_id)
+        configured_owner = _is_configured_owner(user_id)
+
         if account is None:
-            raise HTTPException(status_code=403, detail="Vínculo administrativo não encontrado.")
+            if not configured_owner:
+                raise HTTPException(status_code=403, detail="Vínculo administrativo não encontrado.")
+            account = BillingAccount(
+                user_id=user_id,
+                plan="premium",
+                subscription_status="active",
+                plan_credits=ADMIN_CREDITS,
+                extra_credits=0,
+                current_period_end=None,
+            )
+            db.add(account)
+            db.flush()
 
         marker = _admin_marker(db, user_id)
         can_migrate = _can_migrate_legacy_admin(db, account)
-        if not marker and not can_migrate:
+        if not configured_owner and not marker and not can_migrate:
             raise HTTPException(status_code=403, detail="Vínculo administrativo não encontrado.")
 
         account.plan = "premium"
