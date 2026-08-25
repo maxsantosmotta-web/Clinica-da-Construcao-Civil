@@ -1,15 +1,20 @@
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy import select
 
 from app.api.admin import CLINIC_OWNER_USER_ID
+from app.auth import require_authenticated_user
 from app.database import session_scope
 from app.models import LibraryAsset
 
 router = APIRouter(prefix="/api/videos", tags=["videos"])
 
-COURSE_VIDEO_NAMES = {
-    1: "aula-1.mp4",
-}
+MAX_COURSE_VIDEO_SIZE = 250 * 1024 * 1024
+
+
+def _lesson_video_name(lesson_id: int) -> str:
+    if lesson_id < 1 or lesson_id > 39:
+        raise HTTPException(status_code=404, detail="Aula inválida.")
+    return f"aula-{lesson_id}.mp4"
 
 
 def _parse_range(range_header: str | None, total_size: int) -> tuple[int, int] | None:
@@ -44,11 +49,68 @@ def _parse_range(range_header: str | None, total_size: int) -> tuple[int, int] |
     return start, end
 
 
+@router.post("/admin/aula-{lesson_id}", status_code=status.HTTP_201_CREATED)
+async def upload_lesson_video(
+    lesson_id: int,
+    file: UploadFile = File(...),
+    session: dict = Depends(require_authenticated_user),
+):
+    user_id = str(session.get("sub") or "").strip()
+    if user_id != CLINIC_OWNER_USER_ID:
+        raise HTTPException(status_code=403, detail="Apenas o administrador pode alterar as videoaulas.")
+
+    expected_name = _lesson_video_name(lesson_id)
+    content_type = (file.content_type or "").lower()
+    if content_type and not content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="Selecione um arquivo de vídeo válido.")
+
+    content = await file.read(MAX_COURSE_VIDEO_SIZE + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="O arquivo de vídeo está vazio.")
+    if len(content) > MAX_COURSE_VIDEO_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="O vídeo ultrapassa o limite de 250 MB.",
+        )
+
+    with session_scope() as db:
+        asset = db.scalar(
+            select(LibraryAsset)
+            .where(
+                LibraryAsset.user_id == CLINIC_OWNER_USER_ID,
+                LibraryAsset.name == expected_name,
+            )
+            .order_by(LibraryAsset.created_at.desc())
+            .limit(1)
+        )
+
+        if asset is None:
+            asset = LibraryAsset(
+                user_id=CLINIC_OWNER_USER_ID,
+                name=expected_name,
+                mime_type=file.content_type or "video/mp4",
+                size_bytes=len(content),
+                content=content,
+            )
+            db.add(asset)
+        else:
+            asset.mime_type = file.content_type or "video/mp4"
+            asset.size_bytes = len(content)
+            asset.content = content
+
+        db.flush()
+
+    return {
+        "status": "ok",
+        "lessonId": lesson_id,
+        "name": expected_name,
+        "sizeBytes": len(content),
+    }
+
+
 @router.get("/aula-{lesson_id}")
 def stream_lesson_video(lesson_id: int, request: Request):
-    expected_name = COURSE_VIDEO_NAMES.get(lesson_id)
-    if not expected_name:
-        raise HTTPException(status_code=404, detail="Vídeo não configurado para esta aula.")
+    expected_name = _lesson_video_name(lesson_id)
 
     with session_scope() as db:
         asset = db.scalar(
@@ -64,7 +126,7 @@ def stream_lesson_video(lesson_id: int, request: Request):
         if asset is None:
             raise HTTPException(
                 status_code=404,
-                detail=f'Envie o arquivo "{expected_name}" para a Biblioteca do administrador.',
+                detail=f'Vídeo "{expected_name}" ainda não foi enviado pelo administrador.',
             )
 
         content = bytes(asset.content)
