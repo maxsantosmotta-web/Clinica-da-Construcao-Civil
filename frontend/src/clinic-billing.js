@@ -15,6 +15,52 @@ const CLINIC_BILLING = {
   },
 };
 
+function clinicBillingWait(delay) {
+  return new Promise((resolve) => window.setTimeout(resolve, delay));
+}
+
+async function clinicBillingToken() {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    const session = window.Clerk?.session;
+    if (session) {
+      const token = await session.getToken({ skipCache: attempt > 0 }).catch(() => null);
+      if (token) return token;
+    }
+    await clinicBillingWait(150);
+  }
+  throw new Error('Sessão não confirmada. Entre novamente.');
+}
+
+async function clinicCheckout(button) {
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = 'Abrindo pagamento...';
+
+  try {
+    const token = await clinicBillingToken();
+    const response = await fetch('/api/billing/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ product: button.dataset.billingProduct }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.detail || payload.message || 'Não foi possível abrir o pagamento.');
+    }
+    if (!payload.url) throw new Error('Link de pagamento não retornado.');
+
+    window.location.assign(payload.url);
+  } catch (error) {
+    window.alert(error?.message || 'Não foi possível abrir o pagamento.');
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
 function clinicBillingReturn(event) {
   event?.preventDefault();
   const dashboardButton = [...document.querySelectorAll('.sidebar-navigation button')]
@@ -96,6 +142,10 @@ function renderClinicBilling(section) {
   });
   section.querySelector('[data-clinic-period="yearly"]')?.addEventListener('click', () => {
     setClinicBillingPeriod(section, 'yearly');
+  });
+  section.querySelector('.clinic-plan-action')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    clinicCheckout(event.currentTarget);
   });
   section.querySelector('.clinic-billing-back')?.addEventListener('click', clinicBillingReturn);
 }
