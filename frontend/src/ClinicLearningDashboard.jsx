@@ -15,7 +15,7 @@ const lessons = Array.from({ length: 39 }, (_, index) => ({
   id: index + 1,
   title: lessonTitles[index] || `Aula ${String(index + 1).padStart(2, '0')}`,
   module: index < 20 ? 'Elétrica' : 'Hidráulica',
-  url: index === 0 ? 'https://drive.google.com/uc?export=download&id=1UCl-EffvwcnUtoqCcGgqJz1k6s-FwZk7' : '',
+  url: index === 0 ? '/api/videos/aula-1' : '',
   description: lessonTitles[index] ? 'Aula prática do treinamento Clínica da Construção Civil.' : 'Conteúdo em preparação.',
 }));
 
@@ -258,7 +258,7 @@ export default function ClinicLearningDashboard() {
 
         {section === 'materiais' ? <><header className="clinic-course-header"><span>Materiais complementares</span><h1>PDFs, apostilas e links</h1><p>Área preparada para arquivos PDF, materiais de apoio e pastas do Google Drive.</p></header><div className="clinic-materials-grid">{materials.map((item) => <article className="clinic-material-card" key={item.id}><span className="clinic-material-type">{item.type}</span><div><h2>{item.title}</h2><p>{item.url ? 'Material disponível para visualização.' : 'Material aguardando cadastro do link.'}</p></div><button type="button" disabled={!item.url}>{item.url ? 'Abrir material' : 'Em preparação'}</button></article>)}</div></> : null}
 
-        {section === 'progresso' ? <><header className="clinic-course-header"><span>Meu Progresso</span><h1>Acompanhe sua evolução</h1><p>Veja quantas aulas já foram concluídas e quanto falta para finalizar o treinamento.</p></header><section className="clinic-progress-card"><ProgressRing value={progress} /><div><h2>{completed.size} de 39 aulas concluídas</h2><p>Marque cada aula como concluída para acompanhar sua evolução.</p><div className="clinic-progress-bar"><span style={{ width: `${progress}%` }} /></div></div></section></> : null}
+        {section === 'progresso' ? <><header className="clinic-course-header"><span>Meu Progresso</span><h1>Acompanhe sua evolução</h1><p>Veja quantas aulas já foram concluídas e quanto falta para finalizar o treinamento.</p></header><section className="clinic-progress-card"><ProgressRing value={progress} /><div><h2>{completed.size} de 39 aulas concluídas</h2><p>Marque cada aula como concluída para acompanhar sua evolução.</p><div className="clinic-progress-bar"><span style={{ width: `${progress}%` }} /></div></div></section> : null}
 
         {section === 'faturamento' ? <><header className="clinic-course-header"><span>Faturamento</span><h1>Seu plano</h1><p>Consulte aqui a modalidade do seu acesso.</p></header><section className="clinic-progress-card"><div className="clinic-material-type">{isAdmin ? 'ADMIN' : 'PLANO ATIVO'}</div><div><h2>{isAdmin ? 'Acesso administrativo vitalício' : `Plano ${planCycleLabel}`}</h2><p>{isAdmin ? 'Seu perfil possui acesso permanente à Clínica da Construção Civil.' : `Sua assinatura é ${planCycleLabel.toLowerCase()}.`}</p>{renewalLabel && !isAdmin ? <p>Próxima renovação/período: {renewalLabel}</p> : null}<button type="button" onClick={() => navigate('inicio')}>Voltar ao início</button></div></section></> : null}
 
