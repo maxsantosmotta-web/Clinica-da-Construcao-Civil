@@ -1,0 +1,67 @@
+/* Tema final da Clínica para o Painel ADM. Importado por último para vencer o legado visual do DomnAI. */
+.domnai-admin-gate-page,
+.domnai-admin-shell,
+.domnai-admin-workspace {
+  background: #071311 !important;
+  color: #f7fffd !important;
+}
+
+.domnai-admin-sidebar {
+  background: linear-gradient(180deg, #081714 0%, #0b1d19 100%) !important;
+  border-right-color: rgba(58, 220, 188, .18) !important;
+}
+
+.domnai-admin-brand {
+  border-bottom-color: rgba(58, 220, 188, .12) !important;
+}
+
+.domnai-admin-brand > span,
+.domnai-admin-topbar span:first-child,
+.domnai-admin-foundation-kicker {
+  color: #4fe1c2 !important;
+}
+
+.domnai-admin-sidebar nav button.active {
+  border-color: rgba(79, 225, 194, .20) !important;
+  background: linear-gradient(135deg, rgba(32, 182, 151, .18), rgba(42, 218, 193, .08)) !important;
+  color: #57e4c7 !important;
+}
+
+.domnai-admin-sidebar nav button.active span {
+  color: #57e4c7 !important;
+}
+
+.domnai-admin-open-menu,
+.domnai-admin-close-menu,
+.domnai-admin-back-user {
+  border-color: rgba(79, 225, 194, .20) !important;
+  background: #0a1b17 !important;
+  color: #4fe1c2 !important;
+}
+
+.domnai-admin-sidebar-footer {
+  border-top-color: rgba(58, 220, 188, .12) !important;
+}
+
+.domnai-admin-signout-button,
+.domnai-admin-profile-card {
+  background: #0a1a17 !important;
+  border-color: rgba(79, 225, 194, .14) !important;
+}
+
+.domnai-admin-profile-avatar {
+  border-color: rgba(79, 225, 194, .34) !important;
+  background: linear-gradient(145deg, rgba(66, 223, 189, .16), #0a1a17) !important;
+}
+
+.domnai-admin-profile-role {
+  border-color: rgba(79, 225, 194, .32) !important;
+  background: rgba(66, 223, 189, .10) !important;
+  color: #55e2c5 !important;
+}
+
+/* Somente os blocos de gráficos permanecem pretos. */
+.domnai-premium-chart-card {
+  background: #030504 !important;
+  border-color: rgba(79, 225, 194, .12) !important;
+}
