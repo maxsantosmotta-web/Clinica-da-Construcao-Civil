@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { HashRouter } from 'react-router-dom';
 import App from './App';
+import AdminAccessBoundary from './AdminAccessBoundary';
 import ErrorBoundary from './ErrorBoundary';
 import './styles.css';
 import './scale.css';
@@ -232,7 +233,9 @@ async function startApplication() {
         afterSignOutUrl="/#/"
       >
         <HashRouter>
-          <App />
+          <AdminAccessBoundary>
+            <App />
+          </AdminAccessBoundary>
         </HashRouter>
       </ClerkProvider>
     </ErrorBoundary>,
