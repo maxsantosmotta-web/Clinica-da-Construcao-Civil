@@ -1,4 +1,4 @@
-import DOMNAI_LOGO from './assets/domnai-logo-oficial-transparente.png';
+import CLINIC_LOGO from './assets/clinic-logo-data.js';
 
 let domnaiLogoutInProgress = false;
 
@@ -31,7 +31,7 @@ function showDomnAILogoutOverlay() {
   overlay.dataset.domnaiLogoutOverlay = 'true';
   overlay.setAttribute('aria-busy', 'true');
   overlay.innerHTML = `
-    <img src="${DOMNAI_LOGO}" alt="DomnAI">
+    <img src="${CLINIC_LOGO}" alt="Clínica da Construção Civil">
     <span class="domnai-user-logout-spinner" aria-hidden="true"></span>
   `;
   document.body.appendChild(overlay);
@@ -72,12 +72,12 @@ function domnaiSignOut(button) {
         finishRedirect();
       })
       .catch((error) => {
-        console.error('Não foi possível encerrar a sessão do DomnAI.', error);
+        console.error('Não foi possível encerrar a sessão da Clínica da Construção Civil.', error);
         window.clearTimeout(fallbackTimer);
         finishRedirect();
       });
   } catch (error) {
-    console.error('Não foi possível iniciar a saída do DomnAI.', error);
+    console.error('Não foi possível iniciar a saída da Clínica da Construção Civil.', error);
     window.clearTimeout(fallbackTimer);
     finishRedirect();
   }
