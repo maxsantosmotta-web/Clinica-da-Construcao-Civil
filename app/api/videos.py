@@ -1,64 +1,99 @@
-from urllib.request import Request as UrlRequest, urlopen
+from fastapi import APIRouter, HTTPException, Request, Response
+from sqlalchemy import select
 
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from app.api.admin import CLINIC_OWNER_USER_ID
+from app.database import session_scope
+from app.models import LibraryAsset
 
 router = APIRouter(prefix="/api/videos", tags=["videos"])
 
-LESSON_VIDEO_URLS = {
-    1: "https://drive.google.com/uc?export=download&id=1UCl-EffvwcnUtoqCcGgqJz1k6s-FwZk7",
+COURSE_VIDEO_NAMES = {
+    1: "aula-1.mp4",
 }
 
 
-def _iter_upstream(response, chunk_size: int = 1024 * 512):
+def _parse_range(range_header: str | None, total_size: int) -> tuple[int, int] | None:
+    if not range_header or not range_header.startswith("bytes="):
+        return None
+
+    raw = range_header.removeprefix("bytes=").split(",", 1)[0].strip()
+    if "-" not in raw:
+        return None
+
+    start_raw, end_raw = raw.split("-", 1)
     try:
-        while True:
-            chunk = response.read(chunk_size)
-            if not chunk:
-                break
-            yield chunk
-    finally:
-        response.close()
+        if start_raw:
+            start = int(start_raw)
+            end = int(end_raw) if end_raw else total_size - 1
+        else:
+            suffix_length = int(end_raw)
+            if suffix_length <= 0:
+                return None
+            start = max(total_size - suffix_length, 0)
+            end = total_size - 1
+    except ValueError:
+        return None
+
+    if start < 0 or start >= total_size:
+        return None
+
+    end = min(end, total_size - 1)
+    if end < start:
+        return None
+
+    return start, end
 
 
 @router.get("/aula-{lesson_id}")
 def stream_lesson_video(lesson_id: int, request: Request):
-    source_url = LESSON_VIDEO_URLS.get(lesson_id)
-    if not source_url:
-        raise HTTPException(status_code=404, detail="Vídeo não encontrado.")
+    expected_name = COURSE_VIDEO_NAMES.get(lesson_id)
+    if not expected_name:
+        raise HTTPException(status_code=404, detail="Vídeo não configurado para esta aula.")
 
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "video/mp4,video/*;q=0.9,*/*;q=0.8",
-    }
-    range_header = request.headers.get("range")
-    if range_header:
-        headers["Range"] = range_header
+    with session_scope() as db:
+        asset = db.scalar(
+            select(LibraryAsset)
+            .where(
+                LibraryAsset.user_id == CLINIC_OWNER_USER_ID,
+                LibraryAsset.name == expected_name,
+            )
+            .order_by(LibraryAsset.created_at.desc())
+            .limit(1)
+        )
 
-    upstream_request = UrlRequest(source_url, headers=headers)
-    try:
-        upstream = urlopen(upstream_request, timeout=30)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail="Não foi possível carregar o vídeo.") from exc
+        if asset is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f'Envie o arquivo "{expected_name}" para a Biblioteca do administrador.',
+            )
 
-    response_headers = {
-        "Accept-Ranges": upstream.headers.get("Accept-Ranges", "bytes"),
+        content = bytes(asset.content)
+        media_type = asset.mime_type or "video/mp4"
+
+    total_size = len(content)
+    selected_range = _parse_range(request.headers.get("range"), total_size)
+
+    common_headers = {
+        "Accept-Ranges": "bytes",
         "Cache-Control": "private, max-age=3600",
+        "Content-Disposition": f'inline; filename="{expected_name}"',
     }
-    for header_name in ("Content-Length", "Content-Range"):
-        value = upstream.headers.get(header_name)
-        if value:
-            response_headers[header_name] = value
 
-    status_code = getattr(upstream, "status", 200)
-    content_type = upstream.headers.get("Content-Type", "video/mp4")
-    if "text/html" in content_type.lower():
-        upstream.close()
-        raise HTTPException(status_code=502, detail="A origem não entregou o arquivo de vídeo.")
+    if selected_range is None:
+        common_headers["Content-Length"] = str(total_size)
+        return Response(content=content, media_type=media_type, headers=common_headers)
 
-    return StreamingResponse(
-        _iter_upstream(upstream),
-        status_code=status_code,
-        media_type=content_type,
-        headers=response_headers,
+    start, end = selected_range
+    chunk = content[start : end + 1]
+    common_headers.update(
+        {
+            "Content-Length": str(len(chunk)),
+            "Content-Range": f"bytes {start}-{end}/{total_size}",
+        }
+    )
+    return Response(
+        content=chunk,
+        status_code=206,
+        media_type=media_type,
+        headers=common_headers,
     )
