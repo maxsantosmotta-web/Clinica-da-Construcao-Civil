@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { UserButton } from '@clerk/clerk-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { UserButton, useAuth } from '@clerk/clerk-react';
 import CLINIC_LOGO from './assets/clinic-logo-data.js';
 import './clinic-learning-dashboard.css';
 
@@ -17,15 +17,33 @@ const materials = [
   { id: 'drive-1', title: 'Pasta de materiais no Drive', type: 'Google Drive', url: '' },
 ];
 
+if (!window.__clinicBillingCycleTrackerInstalled) {
+  window.__clinicBillingCycleTrackerInstalled = true;
+  document.addEventListener('click', (event) => {
+    const target = event.target?.closest?.('button, [role="button"], label');
+    if (!target) return;
+    const text = String(target.textContent || '').trim().toLowerCase();
+    if (text === 'mensal' || text.includes('plano mensal') || text.includes('assinar plano mensal')) {
+      localStorage.setItem('clinic:selected-plan-cycle', 'monthly');
+    }
+    if (text === 'anual' || text.includes('plano anual') || text.includes('assinar plano anual')) {
+      localStorage.setItem('clinic:selected-plan-cycle', 'yearly');
+    }
+  }, true);
+}
+
 function ProgressRing({ value }) {
   return <div className="clinic-progress-ring" style={{ '--progress': `${value * 3.6}deg` }}><span>{value}%</span></div>;
 }
 
 export default function ClinicLearningDashboard({ onOpenBilling }) {
+  const { getToken } = useAuth();
   const [section, setSection] = useState('inicio');
   const [moduleFilter, setModuleFilter] = useState('Todos');
   const [completed, setCompleted] = useState(() => new Set());
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [billingStatus, setBillingStatus] = useState(() => window.__domnaiBillingStatus || null);
+  const [billingLoading, setBillingLoading] = useState(false);
 
   const visibleLessons = useMemo(() => {
     if (moduleFilter === 'Todos') return lessons;
@@ -33,10 +51,78 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
   }, [moduleFilter]);
 
   const progress = Math.round((completed.size / lessons.length) * 100);
+  const isAdmin = window.__clinicAdminAccess === true;
+  const hasPaidAccess = isAdmin || Boolean(
+    billingStatus?.premiumActive
+    || (billingStatus?.plan === 'premium' && ['active', 'trialing'].includes(String(billingStatus?.subscriptionStatus || '').toLowerCase())),
+  );
+
+  const storedCycle = localStorage.getItem('clinic:selected-plan-cycle');
+  const planCycleLabel = storedCycle === 'yearly' ? 'Anual' : storedCycle === 'monthly' ? 'Mensal' : 'Plano ativo';
+  const renewalLabel = billingStatus?.currentPeriodEnd
+    ? new Date(billingStatus.currentPeriodEnd).toLocaleDateString('pt-BR')
+    : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadBilling() {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const response = await fetch('/api/billing/status', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (!cancelled) {
+          window.__domnaiBillingStatus = payload;
+          setBillingStatus(payload);
+        }
+      } catch {
+        // A área do aluno continua utilizável mesmo se a leitura financeira estiver temporariamente indisponível.
+      }
+    }
+    loadBilling();
+    return () => { cancelled = true; };
+  }, [getToken]);
 
   function navigate(next) {
     setSection(next);
     setMobileOpen(false);
+  }
+
+  async function openBilling() {
+    setMobileOpen(false);
+    setBillingLoading(true);
+    try {
+      let latest = billingStatus;
+      const token = await getToken();
+      if (token) {
+        const response = await fetch('/api/billing/status', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        });
+        if (response.ok) {
+          latest = await response.json();
+          window.__domnaiBillingStatus = latest;
+          setBillingStatus(latest);
+        }
+      }
+
+      const paid = isAdmin || Boolean(
+        latest?.premiumActive
+        || (latest?.plan === 'premium' && ['active', 'trialing'].includes(String(latest?.subscriptionStatus || '').toLowerCase())),
+      );
+
+      if (paid) {
+        setSection('faturamento');
+      } else {
+        onOpenBilling?.();
+      }
+    } finally {
+      setBillingLoading(false);
+    }
   }
 
   function toggleLesson(id) {
@@ -64,7 +150,7 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
           <button type="button" className={section === 'materiais' ? 'is-active' : ''} onClick={() => navigate('materiais')}><span>▤</span> Materiais</button>
           <button type="button" className={section === 'progresso' ? 'is-active' : ''} onClick={() => navigate('progresso')}><span>✓</span> Meu Progresso</button>
           <div className="clinic-nav-separator" />
-          <button type="button" onClick={onOpenBilling}><span>◈</span> Faturamento</button>
+          <button type="button" className={section === 'faturamento' ? 'is-active' : ''} onClick={openBilling} disabled={billingLoading}><span>◈</span> {billingLoading ? 'Carregando...' : 'Faturamento'}</button>
         </nav>
 
         <div className="clinic-course-account">
@@ -105,6 +191,21 @@ export default function ClinicLearningDashboard({ onOpenBilling }) {
           <>
             <header className="clinic-course-header"><span>Meu Progresso</span><h1>Acompanhe sua evolução</h1><p>Veja quantas aulas já foram concluídas e quanto falta para finalizar o treinamento.</p></header>
             <section className="clinic-progress-card"><ProgressRing value={progress} /><div><h2>{completed.size} de 39 aulas concluídas</h2><p>Marque cada aula como concluída para acompanhar sua evolução.</p><div className="clinic-progress-bar"><span style={{ width: `${progress}%` }} /></div></div></section>
+          </>
+        ) : null}
+
+        {section === 'faturamento' ? (
+          <>
+            <header className="clinic-course-header"><span>Faturamento</span><h1>Seu plano</h1><p>Consulte a modalidade do seu acesso sem sair da área do aluno.</p></header>
+            <section className="clinic-progress-card">
+              <div className="clinic-material-type">{isAdmin ? 'ADMIN' : 'PLANO ATIVO'}</div>
+              <div>
+                <h2>{isAdmin ? 'Acesso administrativo vitalício' : `Plano ${planCycleLabel}`}</h2>
+                <p>{isAdmin ? 'Seu perfil possui acesso permanente à Clínica da Construção Civil.' : `Assinatura ${planCycleLabel.toLowerCase()} ativa.`}</p>
+                {renewalLabel && !isAdmin ? <p>Próxima renovação/período: {renewalLabel}</p> : null}
+                <button type="button" onClick={() => navigate('inicio')}>Voltar</button>
+              </div>
+            </section>
           </>
         ) : null}
       </section>
