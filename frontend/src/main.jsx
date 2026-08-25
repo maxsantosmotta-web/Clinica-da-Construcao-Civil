@@ -28,7 +28,6 @@ import './dashboard-sidebar-cleanup.css';
 import './dashboard-link-enhancements.js';
 import './dashboard-operation-groups.js';
 import './dashboard-extra-icons.js';
-import './dashboard-billing-enhancements.js';
 import './dashboard-admin-access-sync.js';
 import './dashboard-feedback-pre-navigation.js';
 import './dashboard-profile-enhancements.js';
