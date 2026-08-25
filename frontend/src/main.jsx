@@ -45,6 +45,7 @@ import './dashboard-sidebar-cleanup.js';
 import './auth-enhancements.js';
 import './clinic-landing.css';
 import './clinic-landing.js';
+import './public-links.js';
 
 const rootElement = document.getElementById('root');
 
