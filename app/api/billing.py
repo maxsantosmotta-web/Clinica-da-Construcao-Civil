@@ -88,6 +88,32 @@ def _is_premium(account: BillingAccount) -> bool:
     return datetime.now(timezone.utc) <= end
 
 
+def _billing_cycle(account: BillingAccount) -> str | None:
+    subscription_id = account.stripe_subscription_id
+    secret = os.getenv("STRIPE_SECRET_KEY", "").strip()
+    if not subscription_id or not secret:
+        return None
+    try:
+        stripe.api_key = secret
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        metadata = subscription.get("metadata") or {}
+        product = str(metadata.get("product") or "").lower()
+        if product == "premium_yearly":
+            return "yearly"
+        if product == "premium_monthly":
+            return "monthly"
+        items = ((subscription.get("items") or {}).get("data") or [])
+        if items:
+            interval = str((((items[0].get("price") or {}).get("recurring") or {}).get("interval") or "")).lower()
+            if interval == "year":
+                return "yearly"
+            if interval == "month":
+                return "monthly"
+    except Exception:
+        return None
+    return None
+
+
 def _serialize(account: BillingAccount) -> dict:
     plan = account.plan
     if plan == "free_demo":
@@ -100,6 +126,7 @@ def _serialize(account: BillingAccount) -> dict:
         "totalCredits": account.plan_credits + account.extra_credits,
         "premiumActive": _is_premium(account),
         "currentPeriodEnd": account.current_period_end.isoformat() if account.current_period_end else None,
+        "billingCycle": _billing_cycle(account),
     }
 
 
@@ -195,7 +222,8 @@ def billing_status(session: dict = Depends(require_authenticated_user)):
             return {
                 "plan": "unselected", "subscriptionStatus": "inactive", "planCredits": 0,
                 "extraCredits": 0, "totalCredits": 0, "premiumActive": False,
-                "currentPeriodEnd": None, "profileCompleted": bool(profile and profile.completed),
+                "currentPeriodEnd": None, "billingCycle": None,
+                "profileCompleted": bool(profile and profile.completed),
                 "financialAccountExists": False,
             }
         payload = _serialize(account)
