@@ -7,6 +7,7 @@ import './admin-user-sidebar-entry.css';
 import './admin-profile-shell.css';
 
 const OWNER_EMAIL = 'maxsantosmotta@gmail.com';
+const OWNER_USER_ID = 'user_3IO0iCF2RnRzluAa4NWzKxhjTmJ';
 const ADMIN_ENTRY_KEY = 'domnai:admin-requested:v1';
 const PROFILE_CACHE_KEY = 'domnai:profile:v1';
 const ADMIN_WIDE_QUERY = '(min-width: 821px)';
@@ -238,7 +239,7 @@ export default function AdminAccessBoundary({ children }) {
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const primaryEmail = String(user?.primaryEmailAddress?.emailAddress || '').trim().toLowerCase();
-  const isOwnerCandidate = primaryEmail === OWNER_EMAIL;
+  const isOwnerCandidate = user?.id === OWNER_USER_ID || primaryEmail === OWNER_EMAIL;
   const adminRoute = route === '/admin' || route.startsWith('/admin/');
   const adminRequested = sessionStorage.getItem(ADMIN_ENTRY_KEY) === 'true';
 
