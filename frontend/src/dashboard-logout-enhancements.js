@@ -1,5 +1,3 @@
-import CLINIC_LOGO from './assets/clinic-logo-data.js';
-
 let domnaiLogoutInProgress = false;
 
 function clearDomnAISessionState() {
@@ -31,7 +29,6 @@ function showDomnAILogoutOverlay() {
   overlay.dataset.domnaiLogoutOverlay = 'true';
   overlay.setAttribute('aria-busy', 'true');
   overlay.innerHTML = `
-    <img src="${CLINIC_LOGO}" alt="Clínica da Construção Civil">
     <span class="domnai-user-logout-spinner" aria-hidden="true"></span>
   `;
   document.body.appendChild(overlay);
