@@ -3,12 +3,20 @@ import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import CLINIC_LOGO from './assets/clinic-logo-data.js';
 import './clinic-learning-dashboard.css';
 
+const lessonTitles = [
+  'Grandezas elétricas e conceito atômico',
+  'Diferença de corrente contínua e alternada',
+  'Cálculos básicos da elétrica (triângulo da tensão e da potência)',
+  'Condutores elétricos: tipos (barramento, cabo e fio) e padrão de cores dos cabos',
+  'Emendas elétricas (fio a fio) e isolantes elétricos',
+];
+
 const lessons = Array.from({ length: 39 }, (_, index) => ({
   id: index + 1,
-  title: `Aula ${String(index + 1).padStart(2, '0')}`,
+  title: lessonTitles[index] || `Aula ${String(index + 1).padStart(2, '0')}`,
   module: index < 20 ? 'Elétrica' : 'Hidráulica',
   url: '',
-  description: 'Conteúdo em preparação.',
+  description: lessonTitles[index] ? 'Aula prática do treinamento Clínica da Construção Civil.' : 'Conteúdo em preparação.',
 }));
 
 const materials = [
@@ -240,7 +248,7 @@ export default function ClinicLearningDashboard() {
       <section className="clinic-course-main">
         {section === 'inicio' ? <><header className="clinic-course-header"><span>Área do aluno</span><h1>Clínica da Construção Civil</h1><p>Aprenda na prática elétrica, hidráulica, manutenção e serviços essenciais da construção civil.</p></header><div className="clinic-dashboard-grid"><article className="clinic-hero-card"><div><span>Treinamento prático</span><h2>39 videoaulas organizadas para você avançar no seu ritmo.</h2><p>Os vídeos e materiais serão conectados por link sem alterar a estrutura do curso.</p><button type="button" onClick={() => navigate('aulas')}>Ver aulas</button></div><ProgressRing value={progress} /></article><article className="clinic-stat-card"><strong>39</strong><span>Videoaulas</span><small>Elétrica + Hidráulica</small></article><article className="clinic-stat-card"><strong>{completed.size}</strong><span>Aulas concluídas</span><small>Progresso salvo nesta sessão</small></article><article className="clinic-stat-card"><strong>{materials.length}</strong><span>Materiais</span><small>PDFs e links externos</small></article></div></> : null}
 
-        {section === 'aulas' ? <><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Estrutura preparada para receber os 39 vídeos.</p></header><div className="clinic-filter-row">{['Todos', 'Elétrica', 'Hidráulica'].map((item) => <button key={item} type="button" className={moduleFilter === item ? 'is-active' : ''} onClick={() => setModuleFilter(item)}>{item}</button>)}</div><div className="clinic-lessons-grid">{visibleLessons.map((lesson) => <article className={`clinic-lesson-card${completed.has(lesson.id) ? ' is-complete' : ''}`} key={lesson.id}><div className="clinic-video-placeholder"><span>▶</span><small>{lesson.url ? 'Vídeo disponível' : 'Link do vídeo pendente'}</small></div><div className="clinic-lesson-copy"><span>{lesson.module}</span><h2>{lesson.title}</h2><p>{lesson.description}</p></div><div className="clinic-lesson-actions"><button type="button" disabled={!lesson.url}>{lesson.url ? 'Assistir aula' : 'Em preparação'}</button><label><input type="checkbox" checked={completed.has(lesson.id)} onChange={() => toggleLesson(lesson.id)} /> Concluída</label></div></article>)}</div></> : null}
+        {section === 'aulas' ? <><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><div className="clinic-filter-row">{['Todos', 'Elétrica', 'Hidráulica'].map((item) => <button key={item} type="button" className={moduleFilter === item ? 'is-active' : ''} onClick={() => setModuleFilter(item)}>{item}</button>)}</div><div className="clinic-lessons-grid">{visibleLessons.map((lesson) => <article className={`clinic-lesson-card${completed.has(lesson.id) ? ' is-complete' : ''}`} key={lesson.id}><div className="clinic-video-placeholder clinic-lesson-cover"><img src={CLINIC_LOGO} alt="" aria-hidden="true" /><span className="clinic-lesson-module-badge">{lesson.module}</span><button type="button" className="clinic-cover-play" disabled={!lesson.url} onClick={() => lesson.url && window.open(lesson.url, '_blank', 'noopener,noreferrer')} aria-label={`Assistir ${lesson.title}`}>▶</button></div><div className="clinic-lesson-copy"><span>{lesson.module}</span><h2>{lesson.id}. {lesson.title}</h2><p>{lesson.description}</p></div><div className="clinic-lesson-actions"><button type="button" disabled={!lesson.url} onClick={() => lesson.url && window.open(lesson.url, '_blank', 'noopener,noreferrer')}>{lesson.url ? 'Assistir aula' : 'Em preparação'}</button><label><input type="checkbox" checked={completed.has(lesson.id)} onChange={() => toggleLesson(lesson.id)} /> Concluída</label></div></article>)}</div></> : null}
 
         {section === 'materiais' ? <><header className="clinic-course-header"><span>Materiais complementares</span><h1>PDFs, apostilas e links</h1><p>Área preparada para arquivos PDF, materiais de apoio e pastas do Google Drive.</p></header><div className="clinic-materials-grid">{materials.map((item) => <article className="clinic-material-card" key={item.id}><span className="clinic-material-type">{item.type}</span><div><h2>{item.title}</h2><p>{item.url ? 'Material disponível para visualização.' : 'Material aguardando cadastro do link.'}</p></div><button type="button" disabled={!item.url}>{item.url ? 'Abrir material' : 'Em preparação'}</button></article>)}</div></> : null}
 
