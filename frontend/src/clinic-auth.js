@@ -1,3 +1,6 @@
+import './clinic-billing.css';
+import './clinic-billing.js';
+
 function applyClinicAuthIdentity() {
   document.querySelectorAll('.custom-auth-card').forEach((card) => {
     const title = card.querySelector('.custom-auth-header h1');
