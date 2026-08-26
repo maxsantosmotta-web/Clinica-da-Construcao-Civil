@@ -35,6 +35,7 @@ lesson_3_import = "import LESSON_3_VIDEO from './assets/VID-20260824-WA0012.mp4'
 lesson_4_import = "import LESSON_4_VIDEO from './assets/Aula_4_comprimida.mp4';"
 lesson_7_import = "import LESSON_7_VIDEO from './assets/VID-20260824-WA0016.mp4';"
 lesson_20_import = "import LESSON_20_VIDEO from './assets/VID-20260824-WA0029.mp4';"
+lesson_21_import = "import LESSON_21_VIDEO from './assets/VID-20260824-WA0030.mp4';"
 
 lesson_5_drive = "https://drive.google.com/file/d/1T3OupIxnquFlhN1XONdHCQ-N4Kz8WNGR/preview"
 lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview?usp=drivesdk&v=2"
@@ -51,18 +52,18 @@ lesson_17_drive = "https://drive.google.com/file/d/1qnZMrMAL3ufB-gHfY7hn3e9RhEiJ
 lesson_18_drive = "https://drive.google.com/file/d/1Pqf7-f00DyNgmZDyf3cFghYN56traRyV/preview"
 lesson_19_drive = "https://drive.google.com/file/d/1sNT3S0UXKSU6h9ZIRo1Wl4FOXpFHGhk6/preview"
 
-if lesson_1_import not in dashboard_text:
-    raise RuntimeError('Import da Aula 1 não encontrado; nada foi alterado.')
-if lesson_2_import not in dashboard_text:
-    dashboard_text = dashboard_text.replace(lesson_1_import, lesson_1_import + "\n" + lesson_2_import, 1)
-if lesson_3_import not in dashboard_text:
-    dashboard_text = dashboard_text.replace(lesson_2_import, lesson_2_import + "\n" + lesson_3_import, 1)
-if lesson_4_import not in dashboard_text:
-    dashboard_text = dashboard_text.replace(lesson_3_import, lesson_3_import + "\n" + lesson_4_import, 1)
-if lesson_7_import not in dashboard_text:
-    dashboard_text = dashboard_text.replace(lesson_4_import, lesson_4_import + "\n" + lesson_7_import, 1)
-if lesson_20_import not in dashboard_text:
-    dashboard_text = dashboard_text.replace(lesson_7_import, lesson_7_import + "\n" + lesson_20_import, 1)
+for previous, current in [
+    (lesson_1_import, lesson_2_import),
+    (lesson_2_import, lesson_3_import),
+    (lesson_3_import, lesson_4_import),
+    (lesson_4_import, lesson_7_import),
+    (lesson_7_import, lesson_20_import),
+    (lesson_20_import, lesson_21_import),
+]:
+    if current not in dashboard_text:
+        if previous not in dashboard_text:
+            raise RuntimeError(f'Import anchor not found: {previous}')
+        dashboard_text = dashboard_text.replace(previous, previous + "\n" + current, 1)
 
 mapping = (
     "  url: index === 0 ? LESSON_1_VIDEO "
@@ -84,7 +85,8 @@ mapping = (
     f": index === 16 ? '{lesson_17_drive}' "
     f": index === 17 ? '{lesson_18_drive}' "
     f": index === 18 ? '{lesson_19_drive}' "
-    ": index === 19 ? LESSON_20_VIDEO : '',"
+    ": index === 19 ? LESSON_20_VIDEO "
+    ": index === 20 ? LESSON_21_VIDEO : '',"
 )
 
 pattern = r"^\s*url:\s*index\s*===\s*0\s*\?.*$"
@@ -108,4 +110,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-20 mapeadas; Aula 20 usa MP4 local e mantém player 16:9.')
+print('Aulas 1-21 mapeadas; Aula 21 é a primeira aula de Hidráulica, usa MP4 local e mantém player 16:9.')
