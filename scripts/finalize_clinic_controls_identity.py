@@ -51,7 +51,8 @@ if marker not in css:
 CSS.write_text(css)
 
 # 3) Identidade PWA/Android usando a logo oficial já existente no projeto.
-# Evita conversão via ImageMagick: publica diretamente o WEBP oficial já usado pela Clínica.
+# Publica diretamente o WEBP oficial e força uma NOVA identidade de instalação
+# para não reutilizar o WebAPK/PWA antigo que ainda carrega DomnAI no Android.
 logo_source = LOGO_DATA.read_text()
 match = re.search(r'data:image/webp;base64,([^"\\]+)', logo_source)
 if not match:
@@ -61,31 +62,35 @@ icon_webp = PUBLIC / 'clinic-app-icon.webp'
 icon_webp.write_bytes(raw)
 
 manifest = json.loads(MANIFEST.read_text())
+manifest['id'] = '/clinica-da-construcao-civil'
+manifest['start_url'] = '/#/'
+manifest['scope'] = '/'
 manifest['name'] = 'Clínica da Construção Civil'
 manifest['short_name'] = 'Clínica'
 manifest['description'] = 'Aprenda na prática elétrica, hidráulica, manutenção e serviços essenciais da construção civil.'
+manifest['display'] = 'standalone'
 manifest['background_color'] = '#031711'
 manifest['theme_color'] = '#031711'
 manifest['icons'] = [
-    {'src': '/clinic-app-icon.webp', 'sizes': 'any', 'type': 'image/webp', 'purpose': 'any'},
-    {'src': '/clinic-app-icon.webp', 'sizes': 'any', 'type': 'image/webp', 'purpose': 'maskable'},
+    {'src': '/clinic-app-icon.webp?v=4', 'sizes': 'any', 'type': 'image/webp', 'purpose': 'any'},
+    {'src': '/clinic-app-icon.webp?v=4', 'sizes': 'any', 'type': 'image/webp', 'purpose': 'maskable'},
 ]
 MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
 index = INDEX.read_text()
 index = re.sub(r'<meta name="application-name" content="[^"]*" />', '<meta name="application-name" content="Clínica da Construção Civil" />', index)
 index = re.sub(r'<meta name="apple-mobile-web-app-title" content="[^"]*" />', '<meta name="apple-mobile-web-app-title" content="Clínica" />', index)
-index = re.sub(r'<link rel="icon"[^>]*>', '<link rel="icon" type="image/webp" href="/clinic-app-icon.webp" />', index)
-index = re.sub(r'<link rel="apple-touch-icon"[^>]*>', '<link rel="apple-touch-icon" href="/clinic-app-icon.webp" />', index)
+index = re.sub(r'<link rel="icon"[^>]*>', '<link rel="icon" type="image/webp" href="/clinic-app-icon.webp?v=4" />', index)
+index = re.sub(r'<link rel="apple-touch-icon"[^>]*>', '<link rel="apple-touch-icon" href="/clinic-app-icon.webp?v=4" />', index)
 index = re.sub(r'<title>.*?</title>', '<title>Clínica da Construção Civil</title>', index, count=1)
 INDEX.write_text(index)
 
 sw = SW.read_text()
-sw = re.sub(r"const CACHE_NAME = '[^']+';", "const CACHE_NAME = 'clinica-construcao-shell-v3';", sw, count=1)
-for old_icon in ("  '/clinic-icon-192.png',\n", "  '/clinic-icon-512.png',\n"):
+sw = re.sub(r"const CACHE_NAME = '[^']+';", "const CACHE_NAME = 'clinica-construcao-shell-v4';", sw, count=1)
+for old_icon in ("  '/clinic-icon-192.png',\n", "  '/clinic-icon-512.png',\n", "  '/clinic-app-icon.webp',\n"):
     sw = sw.replace(old_icon, '')
-if "'/clinic-app-icon.webp'" not in sw:
-    sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-app-icon.webp',", 1)
+if "'/clinic-app-icon.webp?v=4'" not in sw:
+    sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-app-icon.webp?v=4',", 1)
 SW.write_text(sw)
 
-print('Clínica finalizada: Sair no menu, Atualizar nas Aulas e identidade PWA/Android atualizada sem ImageMagick.')
+print('Clínica finalizada: controles preservados e nova identidade PWA/Android forçada para substituir DomnAI.')
