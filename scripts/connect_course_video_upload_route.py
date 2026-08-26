@@ -67,7 +67,7 @@ lesson_33_drive = "https://drive.google.com/file/d/1cl_KZbVt-YZlMBktp-RxObhlvrPR
 lesson_34_drive = "https://drive.google.com/file/d/1vu27SXvhLL2HfSWZkBY8z9Q8eDgoXq8i/preview"
 lesson_36_drive = "https://drive.google.com/file/d/1PQk9GZ6UjocT9zcPq3VbPaN0tS-tDsJl/preview"
 lesson_37_drive = "https://drive.google.com/file/d/1mrn-35sbyqjRV9183fBV468hjGn791SD/preview"
-lesson_38_drive = "https://drive.google.com/file/d/1Pt3PsJNFfT8IRTMtlU_oVS5bRK7vrF25/preview"
+lesson_38_drive = "https://drive.google.com/file/d/1fwNhxf-ai0LONxA5Z4vRoxKKGqDMLy4K/preview"
 
 for previous, current in [
     (lesson_1_import, lesson_2_import),
