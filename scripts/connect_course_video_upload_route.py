@@ -34,7 +34,9 @@ lesson_2_import = "import LESSON_2_VIDEO from './assets/VID-20260824-WA0011.mp4'
 lesson_3_import = "import LESSON_3_VIDEO from './assets/VID-20260824-WA0012.mp4';"
 lesson_4_import = "import LESSON_4_VIDEO from './assets/Aula_4_comprimida.mp4';"
 lesson_5_drive = "https://drive.google.com/file/d/1T3OupIxnquFlhN1XONdHCQ-N4Kz8WNGR/preview"
-lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview"
+# Aula 6: mantém o mesmo arquivo, mas força uma nova URL de preview para evitar cache antigo do processamento do Drive.
+lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview?usp=drivesdk&v=2"
+lesson_6_drive_old = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview"
 
 if lesson_1_import not in dashboard_text:
     raise RuntimeError('Import da Aula 1 não encontrado; nada foi alterado.')
@@ -45,14 +47,21 @@ if lesson_3_import not in dashboard_text:
 if lesson_4_import not in dashboard_text:
     dashboard_text = dashboard_text.replace(lesson_3_import, lesson_3_import + "\n" + lesson_4_import, 1)
 
+# Se o build ainda contiver a URL antiga da Aula 6, substitui pela URL renovada antes de mapear as aulas.
+if lesson_6_drive_old in dashboard_text:
+    dashboard_text = dashboard_text.replace(lesson_6_drive_old, lesson_6_drive, 1)
+
 url_1 = "url: index === 0 ? LESSON_1_VIDEO : '',"
 url_1_2 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : '',"
 url_1_3 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : '',"
 url_1_4 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : '',"
 url_1_5 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : '',"
 url_1_6 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive}' : '',"
+url_1_6_old = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive_old}' : '',"
 
-if url_1_6 not in dashboard_text:
+if url_1_6_old in dashboard_text:
+    dashboard_text = dashboard_text.replace(url_1_6_old, url_1_6, 1)
+elif url_1_6 not in dashboard_text:
     if url_1_5 in dashboard_text:
         dashboard_text = dashboard_text.replace(url_1_5, url_1_6, 1)
     elif url_1_4 in dashboard_text:
@@ -83,4 +92,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-4 locais preservadas; Aulas 5 e 6 no Drive com bloco mais alto para mostrar controles completos.')
+print('Aula 6 reconectada ao mesmo arquivo do Drive com URL de preview renovada; demais aulas preservadas.')
