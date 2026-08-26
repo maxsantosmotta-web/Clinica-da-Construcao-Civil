@@ -25,7 +25,7 @@ if route not in text:
 
 path.write_text(text)
 
-# Aulas 1-4 usam MP4 local; Aula 5 usa Google Drive.
+# Aulas 1-4 locais; Aula 5 via Google Drive.
 dashboard_path = Path('/frontend/src/ClinicLearningDashboard.jsx')
 dashboard_text = dashboard_path.read_text()
 
@@ -35,25 +35,40 @@ lesson_3_import = "import LESSON_3_VIDEO from './assets/VID-20260824-WA0012.mp4'
 lesson_4_import = "import LESSON_4_VIDEO from './assets/Aula_4_comprimida.mp4';"
 lesson_5_drive = "https://drive.google.com/file/d/1T3OupIxnquFlhN1XONdHCQ-N4Kz8WNGR/preview"
 
-for expected in (lesson_1_import, lesson_2_import, lesson_3_import, lesson_4_import):
-    if expected not in dashboard_text:
-        raise RuntimeError(f'Import local esperado não encontrado: {expected}')
+if lesson_1_import not in dashboard_text:
+    raise RuntimeError('Import da Aula 1 não encontrado; nada foi alterado.')
+if lesson_2_import not in dashboard_text:
+    dashboard_text = dashboard_text.replace(lesson_1_import, lesson_1_import + "\n" + lesson_2_import, 1)
+if lesson_3_import not in dashboard_text:
+    dashboard_text = dashboard_text.replace(lesson_2_import, lesson_2_import + "\n" + lesson_3_import, 1)
+if lesson_4_import not in dashboard_text:
+    dashboard_text = dashboard_text.replace(lesson_3_import, lesson_3_import + "\n" + lesson_4_import, 1)
 
+url_1 = "url: index === 0 ? LESSON_1_VIDEO : '',"
+url_1_2 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : '',"
+url_1_3 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : '',"
 url_1_4 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : '',"
 url_1_5 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : '',"
 
 if url_1_5 not in dashboard_text:
-    if url_1_4 not in dashboard_text:
-        raise RuntimeError('Mapeamento atual das Aulas 1-4 não encontrado; nada foi alterado.')
-    dashboard_text = dashboard_text.replace(url_1_4, url_1_5, 1)
+    if url_1_4 in dashboard_text:
+        dashboard_text = dashboard_text.replace(url_1_4, url_1_5, 1)
+    elif url_1_3 in dashboard_text:
+        dashboard_text = dashboard_text.replace(url_1_3, url_1_5, 1)
+    elif url_1_2 in dashboard_text:
+        dashboard_text = dashboard_text.replace(url_1_2, url_1_5, 1)
+    elif url_1 in dashboard_text:
+        dashboard_text = dashboard_text.replace(url_1, url_1_5, 1)
+    else:
+        raise RuntimeError('Mapeamento de URL das aulas não encontrado; nada foi alterado.')
 
 video_tag = "<video src={lesson.url} controls autoPlay playsInline onEnded={() => setPlayingLessonId(null)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', border: 0, background: '#000' }} />"
 player_tag = "{lesson.url.includes('drive.google.com') ? <iframe src={lesson.url} title={lesson.title} allow=\"autoplay; encrypted-media\" allowFullScreen style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, background: '#000' }} /> : <video src={lesson.url} controls autoPlay playsInline onEnded={() => setPlayingLessonId(null)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', border: 0, background: '#000' }} />}"
 
 if player_tag not in dashboard_text:
     if video_tag not in dashboard_text:
-        raise RuntimeError('Player nativo esperado não encontrado; nada foi alterado.')
+        raise RuntimeError('Player de vídeo não encontrado; nada foi alterado.')
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-4 locais preservadas; Aula 5 conectada ao Google Drive.')
+print('Aulas 1-4 locais preservadas e Aula 5 conectada ao Google Drive.')
