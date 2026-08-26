@@ -1,10 +1,8 @@
-const CACHE_NAME = 'domnai-shell-v2';
+const CACHE_NAME = 'clinica-construcao-shell-v1';
 const APP_SHELL = [
   '/',
   '/#/',
   '/manifest.webmanifest',
-  '/domnai-icon-192.png',
-  '/domnai-icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
