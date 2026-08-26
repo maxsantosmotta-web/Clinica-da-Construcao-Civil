@@ -40,6 +40,7 @@ lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitAD
 lesson_8_drive = "https://drive.google.com/file/d/1meg3R3NhhWx1kKTlnjMjXVLmOPLN6qgM/preview"
 lesson_9_drive = "https://drive.google.com/file/d/1kGJn7VUXhfGxRb4oy1JSzkSqOpJxGRMQ/preview"
 lesson_10_drive = "https://drive.google.com/file/d/1xVw7r-tBJOujE35bE4qkyTkjRjMQbLd9/preview"
+lesson_11_drive = "https://drive.google.com/file/d/1fAA8wsN-ln6LzlDaqh2U2t9Ub6bGpsju/preview"
 
 if lesson_1_import not in dashboard_text:
     raise RuntimeError('Import da Aula 1 não encontrado; nada foi alterado.')
@@ -62,7 +63,8 @@ mapping = (
     ": index === 6 ? LESSON_7_VIDEO "
     f": index === 7 ? '{lesson_8_drive}' "
     f": index === 8 ? '{lesson_9_drive}' "
-    f": index === 9 ? '{lesson_10_drive}' : '',"
+    f": index === 9 ? '{lesson_10_drive}' "
+    f": index === 10 ? '{lesson_11_drive}' : '',"
 )
 
 pattern = r"^\s*url:\s*index\s*===\s*0\s*\?.*$"
@@ -86,4 +88,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-10 mapeadas de forma resiliente; Aula 10 no Drive com player 16:10.')
+print('Aulas 1-11 mapeadas; Aula 11 no Drive com player 16:10.')
