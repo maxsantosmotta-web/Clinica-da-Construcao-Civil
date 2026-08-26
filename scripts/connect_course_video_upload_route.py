@@ -62,6 +62,14 @@ if url_1_5 not in dashboard_text:
     else:
         raise RuntimeError('Mapeamento de URL das aulas não encontrado; nada foi alterado.')
 
+# Player: MP4 local mantém 16:9; somente links do Drive ganham mais altura para exibir controles completos.
+wrapper_old = "<div className=\"clinic-lesson-player\" style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', overflow: 'hidden', background: '#000', borderRadius: 18, border: '1px solid rgba(79,225,194,.2)' }}>"
+wrapper_new = "<div className=\"clinic-lesson-player\" style={{ position: 'relative', width: '100%', aspectRatio: lesson.url.includes('drive.google.com') ? '16 / 10' : '16 / 9', overflow: 'hidden', background: '#000', borderRadius: 18, border: '1px solid rgba(79,225,194,.2)' }}>"
+if wrapper_new not in dashboard_text:
+    if wrapper_old not in dashboard_text:
+        raise RuntimeError('Bloco visual do player não encontrado; nada foi alterado.')
+    dashboard_text = dashboard_text.replace(wrapper_old, wrapper_new, 1)
+
 video_tag = "<video src={lesson.url} controls autoPlay playsInline onEnded={() => setPlayingLessonId(null)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', border: 0, background: '#000' }} />"
 player_tag = "{lesson.url.includes('drive.google.com') ? <iframe src={lesson.url} title={lesson.title} allow=\"autoplay; encrypted-media\" allowFullScreen style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, background: '#000' }} /> : <video src={lesson.url} controls autoPlay playsInline onEnded={() => setPlayingLessonId(null)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', border: 0, background: '#000' }} />}"
 
@@ -71,4 +79,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-4 locais preservadas e Aula 5 conectada ao Google Drive.')
+print('Aulas locais preservadas; Aula 5 no Drive com bloco mais alto para mostrar controles completos.')
