@@ -54,6 +54,7 @@ lesson_19_drive = "https://drive.google.com/file/d/1sNT3S0UXKSU6h9ZIRo1Wl4FOXpFH
 lesson_22_drive = "https://drive.google.com/file/d/1_vZDizTE4KNFjPHmi8Fr_RwonvbUwGzD/preview"
 lesson_23_drive = "https://drive.google.com/file/d/1w0KSNAly2s_020X_rzdJTtkBjqdq8BqG/preview"
 lesson_24_drive = "https://drive.google.com/file/d/1FNRK3cKUvXGfWvXk_HMxCWxrW33OLXnN/preview"
+lesson_25_drive = "https://drive.google.com/file/d/11c0koXN2MqPQc8TCW8YgSoeG1zWvpwoe/preview"
 
 for previous, current in [
     (lesson_1_import, lesson_2_import),
@@ -92,7 +93,8 @@ mapping = (
     ": index === 20 ? LESSON_21_VIDEO "
     f": index === 21 ? '{lesson_22_drive}' "
     f": index === 22 ? '{lesson_23_drive}' "
-    f": index === 23 ? '{lesson_24_drive}' : '',"
+    f": index === 23 ? '{lesson_24_drive}' "
+    f": index === 24 ? '{lesson_25_drive}' : '',"
 )
 
 pattern = r"^\s*url:\s*index\s*===\s*0\s*\?.*$"
@@ -116,4 +118,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-24 mapeadas; Aula 24 no Drive com player 16:10.')
+print('Aulas 1-25 mapeadas; Aula 25 no Drive com player 16:10.')
