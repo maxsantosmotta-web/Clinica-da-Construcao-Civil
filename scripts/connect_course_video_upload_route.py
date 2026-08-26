@@ -25,7 +25,7 @@ if route not in text:
 
 path.write_text(text)
 
-# Aulas 1-4 e 7 locais; Aulas 5, 6, 8 e 9 via Google Drive.
+# Aulas 1-4 e 7 locais; Aulas 5, 6, 8, 9 e 10 via Google Drive.
 dashboard_path = Path('/frontend/src/ClinicLearningDashboard.jsx')
 dashboard_text = dashboard_path.read_text()
 
@@ -38,6 +38,7 @@ lesson_5_drive = "https://drive.google.com/file/d/1T3OupIxnquFlhN1XONdHCQ-N4Kz8W
 lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview?usp=drivesdk&v=2"
 lesson_8_drive = "https://drive.google.com/file/d/1meg3R3NhhWx1kKTlnjMjXVLmOPLN6qgM/preview"
 lesson_9_drive = "https://drive.google.com/file/d/1kGJn7VUXhfGxRb4oy1JSzkSqOpJxGRMQ/preview"
+lesson_10_drive = "https://drive.google.com/file/d/1xVw7r-tBJOujE35bE4qkyTkjRjMQbLd9/preview"
 lesson_6_drive_old = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview"
 
 if lesson_1_import not in dashboard_text:
@@ -54,41 +55,15 @@ if lesson_7_import not in dashboard_text:
 if lesson_6_drive_old in dashboard_text:
     dashboard_text = dashboard_text.replace(lesson_6_drive_old, lesson_6_drive, 1)
 
-url_1 = "url: index === 0 ? LESSON_1_VIDEO : '',"
-url_1_2 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : '',"
-url_1_3 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : '',"
-url_1_4 = "url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : '',"
-url_1_5 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : '',"
-url_1_6 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive}' : '',"
-url_1_7 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive}' : index === 6 ? LESSON_7_VIDEO : '',"
-url_1_8 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive}' : index === 6 ? LESSON_7_VIDEO : index === 7 ? '{lesson_8_drive}' : '',"
 url_1_9 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive}' : index === 6 ? LESSON_7_VIDEO : index === 7 ? '{lesson_8_drive}' : index === 8 ? '{lesson_9_drive}' : '',"
-url_1_6_old = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive_old}' : '',"
+url_1_10 = f"url: index === 0 ? LESSON_1_VIDEO : index === 1 ? LESSON_2_VIDEO : index === 2 ? LESSON_3_VIDEO : index === 3 ? LESSON_4_VIDEO : index === 4 ? '{lesson_5_drive}' : index === 5 ? '{lesson_6_drive}' : index === 6 ? LESSON_7_VIDEO : index === 7 ? '{lesson_8_drive}' : index === 8 ? '{lesson_9_drive}' : index === 9 ? '{lesson_10_drive}' : '',"
 
-if url_1_6_old in dashboard_text:
-    dashboard_text = dashboard_text.replace(url_1_6_old, url_1_6, 1)
+if url_1_10 not in dashboard_text:
+    if url_1_9 not in dashboard_text:
+        raise RuntimeError('Mapeamento atual das Aulas 1-9 não encontrado; nada foi alterado.')
+    dashboard_text = dashboard_text.replace(url_1_9, url_1_10, 1)
 
-if url_1_9 not in dashboard_text:
-    if url_1_8 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_8, url_1_9, 1)
-    elif url_1_7 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_7, url_1_9, 1)
-    elif url_1_6 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_6, url_1_9, 1)
-    elif url_1_5 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_5, url_1_9, 1)
-    elif url_1_4 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_4, url_1_9, 1)
-    elif url_1_3 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_3, url_1_9, 1)
-    elif url_1_2 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1_2, url_1_9, 1)
-    elif url_1 in dashboard_text:
-        dashboard_text = dashboard_text.replace(url_1, url_1_9, 1)
-    else:
-        raise RuntimeError('Mapeamento de URL das aulas não encontrado; nada foi alterado.')
-
-# MP4 local mantém 16:9; apenas links do Drive usam 16:10.
+# MP4 local mantém 16:9; links do Drive, inclusive Aula 10, usam 16:10.
 wrapper_old = "<div className=\"clinic-lesson-player\" style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9', overflow: 'hidden', background: '#000', borderRadius: 18, border: '1px solid rgba(79,225,194,.2)' }}>"
 wrapper_new = "<div className=\"clinic-lesson-player\" style={{ position: 'relative', width: '100%', aspectRatio: lesson.url.includes('drive.google.com') ? '16 / 10' : '16 / 9', overflow: 'hidden', background: '#000', borderRadius: 18, border: '1px solid rgba(79,225,194,.2)' }}>"
 if wrapper_new not in dashboard_text:
@@ -98,11 +73,10 @@ if wrapper_new not in dashboard_text:
 
 video_tag = "<video src={lesson.url} controls autoPlay playsInline onEnded={() => setPlayingLessonId(null)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', border: 0, background: '#000' }} />"
 player_tag = "{lesson.url.includes('drive.google.com') ? <iframe src={lesson.url} title={lesson.title} allow=\"autoplay; encrypted-media\" allowFullScreen style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, background: '#000' }} /> : <video src={lesson.url} controls autoPlay playsInline onEnded={() => setPlayingLessonId(null)} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', border: 0, background: '#000' }} />}"
-
 if player_tag not in dashboard_text:
     if video_tag not in dashboard_text:
         raise RuntimeError('Player de vídeo não encontrado; nada foi alterado.')
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aula 9 conectada ao Google Drive com player 16:10; aulas locais preservadas em 16:9.')
+print('Aula 10 conectada ao Google Drive com player 16:10; demais aulas preservadas.')
