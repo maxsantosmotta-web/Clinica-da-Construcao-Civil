@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth, useClerk, useUser } from '@clerk/clerk-react';
 import CLINIC_LOGO from './assets/clinic-logo-data.js';
+import LESSON_1_VIDEO from './assets/001-Grandezas-eletricas-e-conceito-atomico.mp4';
 import './clinic-learning-dashboard.css';
 
 const lessonTitles = [
@@ -15,7 +16,7 @@ const lessons = Array.from({ length: 39 }, (_, index) => ({
   id: index + 1,
   title: lessonTitles[index] || `Aula ${String(index + 1).padStart(2, '0')}`,
   module: index < 20 ? 'Elétrica' : 'Hidráulica',
-  url: index === 0 ? '/api/videos/aula-1' : '',
+  url: index === 0 ? LESSON_1_VIDEO : '',
   description: lessonTitles[index] ? 'Aula prática do treinamento Clínica da Construção Civil.' : 'Conteúdo em preparação.',
 }));
 
