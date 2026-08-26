@@ -37,6 +37,7 @@ lesson_7_import = "import LESSON_7_VIDEO from './assets/VID-20260824-WA0016.mp4'
 lesson_20_import = "import LESSON_20_VIDEO from './assets/VID-20260824-WA0029.mp4';"
 lesson_21_import = "import LESSON_21_VIDEO from './assets/VID-20260824-WA0030.mp4';"
 lesson_28_import = "import LESSON_28_VIDEO from './assets/VID-20260824-WA0037.mp4';"
+lesson_35_import = "import LESSON_35_VIDEO from './assets/VID-20260824-WA0044.mp4';"
 
 lesson_5_drive = "https://drive.google.com/file/d/1T3OupIxnquFlhN1XONdHCQ-N4Kz8WNGR/preview"
 lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview?usp=drivesdk&v=2"
@@ -73,6 +74,7 @@ for previous, current in [
     (lesson_7_import, lesson_20_import),
     (lesson_20_import, lesson_21_import),
     (lesson_21_import, lesson_28_import),
+    (lesson_28_import, lesson_35_import),
 ]:
     if current not in dashboard_text:
         if previous not in dashboard_text:
@@ -113,7 +115,8 @@ mapping = (
     f": index === 30 ? '{lesson_31_drive}' "
     f": index === 31 ? '{lesson_32_drive}' "
     f": index === 32 ? '{lesson_33_drive}' "
-    f": index === 33 ? '{lesson_34_drive}' : '',"
+    f": index === 33 ? '{lesson_34_drive}' "
+    ": index === 34 ? LESSON_35_VIDEO : '',"
 )
 
 pattern = r"^\s*url:\s*index\s*===\s*0\s*\?.*$"
@@ -137,4 +140,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-34 mapeadas; Aula 34 no Drive com player 16:10.')
+print('Aulas 1-35 mapeadas; Aula 35 local em 16:9.')
