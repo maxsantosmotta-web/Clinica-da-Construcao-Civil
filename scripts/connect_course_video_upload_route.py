@@ -51,6 +51,7 @@ lesson_16_drive = "https://drive.google.com/file/d/1gEm-RWbKMoQe_XwWhsFhaZ3CkXuU
 lesson_17_drive = "https://drive.google.com/file/d/1qnZMrMAL3ufB-gHfY7hn3e9RhEiJh4zq/preview"
 lesson_18_drive = "https://drive.google.com/file/d/1Pqf7-f00DyNgmZDyf3cFghYN56traRyV/preview"
 lesson_19_drive = "https://drive.google.com/file/d/1sNT3S0UXKSU6h9ZIRo1Wl4FOXpFHGhk6/preview"
+lesson_22_drive = "https://drive.google.com/file/d/1_vZDizTE4KNFjPHmi8Fr_RwonvbUwGzD/preview"
 
 for previous, current in [
     (lesson_1_import, lesson_2_import),
@@ -86,7 +87,8 @@ mapping = (
     f": index === 17 ? '{lesson_18_drive}' "
     f": index === 18 ? '{lesson_19_drive}' "
     ": index === 19 ? LESSON_20_VIDEO "
-    ": index === 20 ? LESSON_21_VIDEO : '',"
+    ": index === 20 ? LESSON_21_VIDEO "
+    f": index === 21 ? '{lesson_22_drive}' : '',"
 )
 
 pattern = r"^\s*url:\s*index\s*===\s*0\s*\?.*$"
@@ -110,4 +112,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-21 mapeadas; Aula 21 é a primeira aula de Hidráulica, usa MP4 local e mantém player 16:9.')
+print('Aulas 1-22 mapeadas; Aula 22 no Drive com player 16:10.')
