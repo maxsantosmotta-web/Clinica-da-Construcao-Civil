@@ -2,7 +2,6 @@ from pathlib import Path
 import base64
 import json
 import re
-import subprocess
 
 DASHBOARD = Path('/frontend/src/ClinicLearningDashboard.jsx')
 CSS = Path('/frontend/src/clinic-learning-dashboard.css')
@@ -52,23 +51,14 @@ if marker not in css:
 CSS.write_text(css)
 
 # 3) Identidade PWA/Android usando a logo oficial já existente no projeto.
+# Evita conversão via ImageMagick: publica diretamente o WEBP oficial já usado pela Clínica.
 logo_source = LOGO_DATA.read_text()
 match = re.search(r'data:image/webp;base64,([^"\\]+)', logo_source)
 if not match:
     raise RuntimeError('Logo oficial da Clínica não encontrada em clinic-logo-data.js.')
 raw = base64.b64decode(match.group(1))
-source_webp = PUBLIC / 'clinic-app-logo-source.webp'
-source_webp.write_bytes(raw)
-
-# Gera ícones quadrados preservando a logo inteira, sem corte.
-for size in (192, 512):
-    out = PUBLIC / f'clinic-icon-{size}.png'
-    inner = int(size * 0.86)
-    subprocess.run([
-        'convert', str(source_webp), '-resize', f'{inner}x{inner}',
-        '-gravity', 'center', '-background', '#031711',
-        '-extent', f'{size}x{size}', str(out)
-    ], check=True)
+icon_webp = PUBLIC / 'clinic-app-icon.webp'
+icon_webp.write_bytes(raw)
 
 manifest = json.loads(MANIFEST.read_text())
 manifest['name'] = 'Clínica da Construção Civil'
@@ -77,23 +67,25 @@ manifest['description'] = 'Aprenda na prática elétrica, hidráulica, manutenç
 manifest['background_color'] = '#031711'
 manifest['theme_color'] = '#031711'
 manifest['icons'] = [
-    {'src': '/clinic-icon-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
-    {'src': '/clinic-icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any maskable'},
+    {'src': '/clinic-app-icon.webp', 'sizes': 'any', 'type': 'image/webp', 'purpose': 'any'},
+    {'src': '/clinic-app-icon.webp', 'sizes': 'any', 'type': 'image/webp', 'purpose': 'maskable'},
 ]
 MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
 
 index = INDEX.read_text()
 index = re.sub(r'<meta name="application-name" content="[^"]*" />', '<meta name="application-name" content="Clínica da Construção Civil" />', index)
 index = re.sub(r'<meta name="apple-mobile-web-app-title" content="[^"]*" />', '<meta name="apple-mobile-web-app-title" content="Clínica" />', index)
-index = re.sub(r'<link rel="icon"[^>]*>', '<link rel="icon" type="image/png" sizes="192x192" href="/clinic-icon-192.png" />', index)
-index = re.sub(r'<link rel="apple-touch-icon"[^>]*>', '<link rel="apple-touch-icon" sizes="192x192" href="/clinic-icon-192.png" />', index)
+index = re.sub(r'<link rel="icon"[^>]*>', '<link rel="icon" type="image/webp" href="/clinic-app-icon.webp" />', index)
+index = re.sub(r'<link rel="apple-touch-icon"[^>]*>', '<link rel="apple-touch-icon" href="/clinic-app-icon.webp" />', index)
 index = re.sub(r'<title>.*?</title>', '<title>Clínica da Construção Civil</title>', index, count=1)
 INDEX.write_text(index)
 
 sw = SW.read_text()
-sw = re.sub(r"const CACHE_NAME = '[^']+';", "const CACHE_NAME = 'clinica-construcao-shell-v2';", sw, count=1)
-if "'/clinic-icon-192.png'" not in sw:
-    sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-icon-192.png',\n  '/clinic-icon-512.png',", 1)
+sw = re.sub(r"const CACHE_NAME = '[^']+';", "const CACHE_NAME = 'clinica-construcao-shell-v3';", sw, count=1)
+for old_icon in ("  '/clinic-icon-192.png',\n", "  '/clinic-icon-512.png',\n"):
+    sw = sw.replace(old_icon, '')
+if "'/clinic-app-icon.webp'" not in sw:
+    sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-app-icon.webp',", 1)
 SW.write_text(sw)
 
-print('Clínica finalizada: Sair no menu, Atualizar nas Aulas e identidade PWA/Android atualizada.')
+print('Clínica finalizada: Sair no menu, Atualizar nas Aulas e identidade PWA/Android atualizada sem ImageMagick.')
