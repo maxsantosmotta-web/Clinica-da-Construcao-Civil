@@ -34,6 +34,7 @@ lesson_2_import = "import LESSON_2_VIDEO from './assets/VID-20260824-WA0011.mp4'
 lesson_3_import = "import LESSON_3_VIDEO from './assets/VID-20260824-WA0012.mp4';"
 lesson_4_import = "import LESSON_4_VIDEO from './assets/Aula_4_comprimida.mp4';"
 lesson_7_import = "import LESSON_7_VIDEO from './assets/VID-20260824-WA0016.mp4';"
+lesson_20_import = "import LESSON_20_VIDEO from './assets/VID-20260824-WA0029.mp4';"
 
 lesson_5_drive = "https://drive.google.com/file/d/1T3OupIxnquFlhN1XONdHCQ-N4Kz8WNGR/preview"
 lesson_6_drive = "https://drive.google.com/file/d/1JdBBTmP44OidPoS-DHBk-gX7iitADGGP/preview?usp=drivesdk&v=2"
@@ -60,6 +61,8 @@ if lesson_4_import not in dashboard_text:
     dashboard_text = dashboard_text.replace(lesson_3_import, lesson_3_import + "\n" + lesson_4_import, 1)
 if lesson_7_import not in dashboard_text:
     dashboard_text = dashboard_text.replace(lesson_4_import, lesson_4_import + "\n" + lesson_7_import, 1)
+if lesson_20_import not in dashboard_text:
+    dashboard_text = dashboard_text.replace(lesson_7_import, lesson_7_import + "\n" + lesson_20_import, 1)
 
 mapping = (
     "  url: index === 0 ? LESSON_1_VIDEO "
@@ -80,7 +83,8 @@ mapping = (
     f": index === 15 ? '{lesson_16_drive}' "
     f": index === 16 ? '{lesson_17_drive}' "
     f": index === 17 ? '{lesson_18_drive}' "
-    f": index === 18 ? '{lesson_19_drive}' : '',"
+    f": index === 18 ? '{lesson_19_drive}' "
+    ": index === 19 ? LESSON_20_VIDEO : '',"
 )
 
 pattern = r"^\s*url:\s*index\s*===\s*0\s*\?.*$"
@@ -104,4 +108,4 @@ if player_tag not in dashboard_text:
     dashboard_text = dashboard_text.replace(video_tag, player_tag, 1)
 
 dashboard_path.write_text(dashboard_text)
-print('Aulas 1-19 mapeadas; Aula 19 no Drive com player 16:10.')
+print('Aulas 1-20 mapeadas; Aula 20 usa MP4 local e mantém player 16:9.')
