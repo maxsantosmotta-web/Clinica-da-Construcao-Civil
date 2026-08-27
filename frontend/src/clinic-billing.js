@@ -107,14 +107,22 @@ function setClinicBillingPeriod(section, period) {
   }
 }
 
+function isClinicBillingSection(section) {
+  if (!section) return false;
+  if (section.dataset.clinicBillingRendered === 'true') return true;
+  if (section.querySelector('.billing-page-header, .billing-loading-state, [data-billing-product]')) return true;
+  if (section.querySelector(':scope > header span')?.textContent?.trim() === 'Faturamento') return true;
+
+  const courseMain = section.closest('.clinic-course-main');
+  if (!courseMain) return false;
+
+  const billingNav = document.querySelector('.clinic-course-navigation button.is-active');
+  return billingNav?.textContent?.trim().includes('Faturamento') === true;
+}
+
 function renderClinicBilling(section) {
   if (!section || section.dataset.clinicBillingRendered === 'true') return;
-
-  const headerLabel = section.querySelector(':scope > header span')?.textContent?.trim();
-  const looksLikeBilling = headerLabel === 'Faturamento'
-    || section.querySelector('.billing-page-header, .billing-loading-state, [data-billing-product]');
-
-  if (!looksLikeBilling) return;
+  if (!isClinicBillingSection(section)) return;
 
   section.dataset.clinicBillingRendered = 'true';
   section.innerHTML = `
@@ -167,9 +175,7 @@ function renderClinicBilling(section) {
 
 function enforceClinicBilling() {
   document.querySelectorAll('.internal-section').forEach((section) => {
-    const isBilling = section.querySelector('.billing-page-header, .billing-loading-state, [data-billing-product]')
-      || section.querySelector(':scope > header span')?.textContent?.trim() === 'Faturamento';
-    if (!isBilling) return;
+    if (!isClinicBillingSection(section)) return;
 
     if (section.dataset.clinicBillingRendered === 'true') {
       const legacyContent = section.querySelector('.billing-balance-grid, .billing-current-plan, .billing-plans-grid, .billing-credit-card, .billing-consumption-card');
