@@ -39,9 +39,14 @@ if cover_import not in text:
     import_anchor = "import CLINIC_LOGO from './assets/clinic-logo-data.js';"
     if import_anchor not in text:
         raise RuntimeError('Import da logo da Clínica não encontrado; nada foi alterado.')
-    # Remove qualquer import antigo da capa de Complementares antes de inserir o arquivo físico correto.
     text = re.sub(r"\nimport CLINIC_COMPLEMENTARES_COVER from './assets/[^']+';", '', text, count=1)
     text = text.replace(import_anchor, import_anchor + '\n' + cover_import, 1)
+
+# O painel inicial agora contabiliza os 5 materiais existentes + Complementares.
+old_material_stat = '<article className="clinic-stat-card"><strong>{materials.length}</strong><span>Materiais</span><small>PDFs e links externos</small></article>'
+new_material_stat = '<article className="clinic-stat-card"><strong>{materials.length + 1}</strong><span>Materiais</span><small>PDFs e links externos</small></article>'
+if old_material_stat in text:
+    text = text.replace(old_material_stat, new_material_stat, 1)
 
 # Guia Elétrico: aplicar classe somente a esse leitor/capa para corrigir a proporção,
 # sem modificar os outros Guias nem Ferramentas Práticas.
@@ -52,11 +57,8 @@ if 'clinic-guia-eletrico-cover' not in text:
         raise RuntimeError('Leitor validado de Guias não encontrado; nada foi alterado.')
     text = text.replace(guide_reader_old, guide_reader_new, 1)
 
-# Tela final do novo Complementares: força uma única estrutura conhecida,
-# com a capa correta e acesso direto ao Drive.
 drive_url = 'https://drive.google.com/drive/folders/1pIAJrpFP6C_XTCd1i5npUo-b0qPndyXS'
 final_section = f'''        {{section === 'complementares-drive' ? <section className="clinic-material-reader clinic-complementares-reader"><div className="clinic-material-cover-frame clinic-complementares-cover"><img src={{CLINIC_COMPLEMENTARES_COVER}} alt="Materiais Complementares — Clínica da Construção Civil" /></div><button type="button" className="clinic-pdf-button clinic-complementares-link" onClick={{() => window.open('{drive_url}', '_blank', 'noopener,noreferrer')}}>Acessar link</button></section> : null}}'''
-
 section_pattern = re.compile(r"\s*\{section === 'complementares-drive' \? <section[^\n]*?</section> : null\}")
 if section_pattern.search(text):
     text = section_pattern.sub('\n' + final_section, text, count=1)
@@ -66,7 +68,6 @@ else:
         raise RuntimeError('Âncora da tela Ferramentas Práticas não encontrada; nada foi alterado.')
     text = text.replace(ferramentas_anchor, final_section + '\n\n' + ferramentas_anchor, 1)
 
-# Restaurar Sair da conta abaixo de Minha conta, sem alterar os demais itens do menu.
 account_block = '''        <button type="button" className={`clinic-course-account clinic-account-button${section === 'perfil' ? ' is-active' : ''}`} onClick={() => navigate('perfil')}>
           <span className="clinic-account-avatar">{avatarUrl ? <img src={avatarUrl} alt="Foto do perfil" /> : initials}</span>
           <span><strong>Minha conta</strong><small>Perfil e acesso</small></span>
@@ -80,7 +81,6 @@ if 'className="clinic-sidebar-logout"' not in text:
         raise RuntimeError('Âncora Minha conta não encontrada; nada foi alterado.')
     text = text.replace(account_block, logout_block, 1)
 
-# Restaurar Atualizar somente na tela de Aulas.
 old_lessons_header = '''        {section === 'aulas' ? <><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><div className="clinic-filter-row">'''
 new_lessons_header = '''        {section === 'aulas' ? <><div className="clinic-lessons-header-row"><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><button type="button" className="clinic-refresh-button" onClick={() => window.location.reload()} aria-label="Atualizar página"><span aria-hidden="true">↻</span> Atualizar</button></div><div className="clinic-filter-row">'''
 if 'className="clinic-refresh-button"' not in text:
@@ -90,7 +90,6 @@ if 'className="clinic-refresh-button"' not in text:
 
 DASHBOARD.write_text(text, encoding='utf-8')
 
-# Estilos finais isolados.
 css = CSS.read_text(encoding='utf-8')
 marker = '/* clinic-final-controls-and-complementares-v1 */'
 base_styles = '''
@@ -124,4 +123,4 @@ if guide_marker not in css:
 '''
 
 CSS.write_text(css, encoding='utf-8')
-print('Guias preservados. Complementares usa o arquivo físico correto enviado pelo usuário e mantém o link do Drive. Controles preservados.')
+print('Painel inicial atualizado para 6 materiais; restante preservado.')
