@@ -36,6 +36,31 @@ def _digits(value: str) -> str:
     return re.sub(r"\D", "", value or "")
 
 
+def _valid_cpf(value: str) -> bool:
+    cpf = _digits(value)
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+
+    numbers = [int(char) for char in cpf]
+    first_sum = sum(numbers[index] * (10 - index) for index in range(9))
+    first_digit = (first_sum * 10) % 11
+    if first_digit == 10:
+        first_digit = 0
+    if first_digit != numbers[9]:
+        return False
+
+    second_sum = sum(numbers[index] * (11 - index) for index in range(10))
+    second_digit = (second_sum * 10) % 11
+    if second_digit == 10:
+        second_digit = 0
+    return second_digit == numbers[10]
+
+
+def _age_on_today(birth_date: date) -> int:
+    today = date.today()
+    return today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+
 def _serialize(profile: UserProfile | None, has_avatar: bool = False) -> dict:
     if profile is None:
         return {"completed": False, "hasAvatar": has_avatar, "profile": None}
@@ -75,14 +100,16 @@ def save_profile(payload: ProfilePayload, session: dict = Depends(require_authen
     phone = _digits(payload.phone)
     zip_code = _digits(payload.zip_code)
 
-    if len(cpf) != 11:
-        raise HTTPException(status_code=400, detail="Informe um CPF válido com 11 dígitos.")
+    if not _valid_cpf(cpf):
+        raise HTTPException(status_code=400, detail="Informe um CPF válido.")
     if len(phone) < 10:
         raise HTTPException(status_code=400, detail="Informe um telefone válido com DDD.")
     if len(zip_code) != 8:
         raise HTTPException(status_code=400, detail="Informe um CEP válido com 8 dígitos.")
     if payload.birth_date >= date.today():
         raise HTTPException(status_code=400, detail="Informe uma data de nascimento válida.")
+    if _age_on_today(payload.birth_date) < 18:
+        raise HTTPException(status_code=400, detail="A Clínica da Construção Civil é destinada somente a maiores de 18 anos.")
 
     user_id = session.get("sub")
     with session_scope() as db:
