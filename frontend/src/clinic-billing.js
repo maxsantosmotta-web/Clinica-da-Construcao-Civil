@@ -174,6 +174,17 @@ function renderClinicBilling(section) {
 }
 
 function enforceClinicBilling() {
+  const billingNav = document.querySelector('.clinic-course-navigation button.is-active');
+  const clinicBillingActive = billingNav?.textContent?.trim().includes('Faturamento') === true;
+
+  if (clinicBillingActive) {
+    const clinicBillingCard = document.querySelector('.clinic-course-main > .clinic-progress-card');
+    if (clinicBillingCard) {
+      renderClinicBilling(clinicBillingCard);
+      return;
+    }
+  }
+
   document.querySelectorAll('.internal-section').forEach((section) => {
     if (!isClinicBillingSection(section)) return;
 
