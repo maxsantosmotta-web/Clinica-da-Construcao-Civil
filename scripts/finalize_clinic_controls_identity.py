@@ -34,22 +34,6 @@ if 'className="clinic-refresh-button"' not in text:
         raise RuntimeError('Cabeçalho das Aulas não encontrado; nada foi alterado.')
     text = text.replace(old_lessons_header, new_lessons_header, 1)
 
-DASHBOARD.write_text(text)
-
-css = CSS.read_text()
-marker = '/* clinic-controls-final-v1 */'
-if marker not in css:
-    css += '''\n\n/* clinic-controls-final-v1 */
-.clinic-sidebar-logout{width:100%;margin-top:10px;border:1px solid rgba(255,104,114,.28);background:rgba(255,79,92,.06);color:#ff9aa2;padding:11px 14px;border-radius:12px;text-align:left;font-weight:800;font-size:.9rem;display:flex;gap:9px;align-items:center;cursor:pointer}
-.clinic-sidebar-logout:hover{background:rgba(255,79,92,.12);border-color:rgba(255,104,114,.42)}
-.clinic-lessons-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
-.clinic-refresh-button{flex:0 0 auto;border:1px solid rgba(79,225,194,.24);background:#0a1b17;color:#59e3c6;border-radius:12px;padding:10px 14px;font-weight:850;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.16)}
-.clinic-refresh-button:hover{background:#10251f;border-color:rgba(79,225,194,.42)}
-.clinic-refresh-button span{font-size:1.1rem;line-height:1}
-@media(max-width:820px){.clinic-lessons-header-row{align-items:flex-start}.clinic-refresh-button{margin-top:0;padding:10px 12px}.clinic-sidebar-logout{margin-top:8px}}
-'''
-CSS.write_text(css)
-
 # 3) Identidade PWA/Android usando a logo oficial já existente no projeto.
 # Publica diretamente o WEBP oficial e força uma NOVA identidade de instalação
 # para não reutilizar o WebAPK/PWA antigo que ainda carrega DomnAI no Android.
@@ -93,4 +77,101 @@ if "'/clinic-app-icon.webp?v=4'" not in sw:
     sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-app-icon.webp?v=4',", 1)
 SW.write_text(sw)
 
-print('Clínica finalizada: controles preservados e nova identidade PWA/Android forçada para substituir DomnAI.')
+# 4) Organiza os cinco materiais já definidos sem alterar a tela das videoaulas.
+# Nesta etapa os slots de capa/PDF ficam preparados para receber os arquivos finais.
+text = DASHBOARD.read_text()
+
+old_materials = '''const materials = [
+  { id: 'pdf-1', title: 'Apostila do curso', type: 'PDF', url: '' },
+  { id: 'pdf-2', title: 'Material complementar', type: 'PDF', url: '' },
+  { id: 'drive-1', title: 'Pasta de materiais no Drive', type: 'Google Drive', url: '' },
+];'''
+new_materials = '''const complementaryMaterials = [
+  { id: 'guia-eletrico', title: 'Guia de Comandos Elétricos', type: 'Guia', cover: '', url: '' },
+  { id: 'guia-hidraulico', title: 'Guia Hidráulica', type: 'Guia', cover: '', url: '' },
+  { id: 'primeiros-clientes', title: 'Como Conseguir os Primeiros Clientes', type: 'Guia prático', cover: '', url: '' },
+];
+
+const practicalTools = [
+  { id: 'checklist-seguranca', title: 'Checklist de Segurança no Serviço', type: 'Checklist', cover: '', url: '' },
+  { id: 'tabela-precos', title: 'Tabela de Preços + Scripts de WhatsApp', type: 'Ferramenta prática', cover: '', url: '' },
+];
+
+const materials = [...complementaryMaterials, ...practicalTools];'''
+if 'const complementaryMaterials = [' not in text:
+    if old_materials not in text:
+        raise RuntimeError('Bloco original de materiais não encontrado; nada foi alterado.')
+    text = text.replace(old_materials, new_materials, 1)
+
+state_anchor = "  const [showMoreAddress, setShowMoreAddress] = useState(false);"
+if 'const [selectedMaterial, setSelectedMaterial]' not in text:
+    if state_anchor not in text:
+        raise RuntimeError('Âncora de estado do dashboard não encontrada.')
+    text = text.replace(state_anchor, state_anchor + "\n  const [selectedMaterial, setSelectedMaterial] = useState(null);", 1)
+
+old_navigate = '''  function navigate(next) {
+    setSection(next);
+    setMobileOpen(false);
+  }'''
+new_navigate = '''  function navigate(next) {
+    setSelectedMaterial(null);
+    setSection(next);
+    setMobileOpen(false);
+  }
+
+  function openMaterial(item) {
+    setSelectedMaterial(item);
+    setMobileOpen(false);
+  }'''
+if 'function openMaterial(item)' not in text:
+    if old_navigate not in text:
+        raise RuntimeError('Função de navegação não encontrada.')
+    text = text.replace(old_navigate, new_navigate, 1)
+
+old_nav_material = '''          <button type="button" className={section === 'materiais' ? 'is-active' : ''} onClick={() => navigate('materiais')}><span>▤</span> Materiais</button>
+          <button type="button" className={section === 'progresso' ? 'is-active' : ''} onClick={() => navigate('progresso')}><span>✓</span> Meu Progresso</button>'''
+new_nav_material = '''          <button type="button" className={section === 'complementares' ? 'is-active' : ''} onClick={() => navigate('complementares')}><span>▤</span> Complementares</button>
+          <button type="button" className={section === 'ferramentas' ? 'is-active' : ''} onClick={() => navigate('ferramentas')}><span>✓</span> Ferramentas Práticas</button>'''
+if "navigate('complementares')" not in text:
+    if old_nav_material not in text:
+        raise RuntimeError('Botões Materiais/Meu Progresso não encontrados.')
+    text = text.replace(old_nav_material, new_nav_material, 1)
+
+old_material_section = '''        {section === 'materiais' ? <><header className="clinic-course-header"><span>Materiais complementares</span><h1>PDFs, apostilas e links</h1><p>Área preparada para arquivos PDF, materiais de apoio e pastas do Google Drive.</p></header><div className="clinic-materials-grid">{materials.map((item) => <article className="clinic-material-card" key={item.id}><span className="clinic-material-type">{item.type}</span><div><h2>{item.title}</h2><p>{item.url ? 'Material disponível para visualização.' : 'Material aguardando cadastro do link.'}</p></div><button type="button" disabled={!item.url}>{item.url ? 'Abrir material' : 'Em preparação'}</button></article>)}</div></> : null}'''
+new_material_section = '''        {section === 'complementares' ? <>{selectedMaterial ? <><header className="clinic-course-header"><span>Materiais complementares</span><h1>{selectedMaterial.title}</h1><p>Visualize a capa e acesse o arquivo completo deste material.</p></header><section className="clinic-material-reader"><button type="button" className="clinic-material-back" onClick={() => setSelectedMaterial(null)}>← Voltar aos complementares</button><div className="clinic-material-cover-frame">{selectedMaterial.cover ? <img src={selectedMaterial.cover} alt={`Capa — ${selectedMaterial.title}`} /> : <div className="clinic-material-cover-pending"><span>{selectedMaterial.type}</span><strong>{selectedMaterial.title}</strong><small>Capa pronta para vinculação</small></div>}</div><button type="button" className="clinic-pdf-button" disabled={!selectedMaterial.url} onClick={() => selectedMaterial.url && window.open(selectedMaterial.url, '_blank', 'noopener,noreferrer')}>{selectedMaterial.url ? 'Abrir PDF' : 'PDF pronto para vinculação'}</button></section></> : <><header className="clinic-course-header"><span>Materiais complementares</span><h1>Guias e primeiros clientes</h1><p>Escolha um material para visualizar a capa e acessar o PDF completo.</p></header><div className="clinic-materials-grid">{complementaryMaterials.map((item) => <button type="button" className="clinic-material-entry" key={item.id} onClick={() => openMaterial(item)}><span className="clinic-material-type">{item.type}</span><strong>{item.title}</strong><small>Abrir material →</small></button>)}</div></>}</> : null}
+
+        {section === 'ferramentas' ? <>{selectedMaterial ? <><header className="clinic-course-header"><span>Ferramentas práticas</span><h1>{selectedMaterial.title}</h1><p>Visualize a capa e acesse o arquivo completo desta ferramenta.</p></header><section className="clinic-material-reader"><button type="button" className="clinic-material-back" onClick={() => setSelectedMaterial(null)}>← Voltar às ferramentas</button><div className="clinic-material-cover-frame">{selectedMaterial.cover ? <img src={selectedMaterial.cover} alt={`Capa — ${selectedMaterial.title}`} /> : <div className="clinic-material-cover-pending"><span>{selectedMaterial.type}</span><strong>{selectedMaterial.title}</strong><small>Capa pronta para vinculação</small></div>}</div><button type="button" className="clinic-pdf-button" disabled={!selectedMaterial.url} onClick={() => selectedMaterial.url && window.open(selectedMaterial.url, '_blank', 'noopener,noreferrer')}>{selectedMaterial.url ? 'Abrir PDF' : 'PDF pronto para vinculação'}</button></section></> : <><header className="clinic-course-header"><span>Ferramentas práticas</span><h1>Checklist e tabela de preços</h1><p>Escolha uma ferramenta para visualizar a capa e acessar o PDF completo.</p></header><div className="clinic-materials-grid">{practicalTools.map((item) => <button type="button" className="clinic-material-entry" key={item.id} onClick={() => openMaterial(item)}><span className="clinic-material-type">{item.type}</span><strong>{item.title}</strong><small>Abrir material →</small></button>)}</div></>}</> : null}'''
+if "section === 'complementares'" not in text:
+    if old_material_section not in text:
+        raise RuntimeError('Tela original de Materiais não encontrada.')
+    text = text.replace(old_material_section, new_material_section, 1)
+
+old_progress_section = '''        {section === 'progresso' ? <><header className="clinic-course-header"><span>Meu Progresso</span><h1>Acompanhe sua evolução</h1><p>Veja quantas aulas já foram concluídas e quanto falta para finalizar o treinamento.</p></header><section className="clinic-progress-card"><ProgressRing value={progress} /><div><h2>{completed.size} de 39 aulas concluídas</h2><p>Marque cada aula como concluída para acompanhar sua evolução.</p><div className="clinic-progress-bar"><span style={{ width: `${progress}%` }} /></div></div></section></> : null}'''
+if old_progress_section in text:
+    text = text.replace(old_progress_section, '', 1)
+
+DASHBOARD.write_text(text)
+
+css = CSS.read_text()
+materials_marker = '/* clinic-student-material-sections-v1 */'
+if materials_marker not in css:
+    css += '''\n\n/* clinic-student-material-sections-v1 */
+.clinic-material-entry{min-height:132px;padding:20px;border:1px solid rgba(79,225,194,.16);border-radius:18px;background:linear-gradient(145deg,#0b1d19,#091713);color:#f7fffd;text-align:left;display:flex;flex-direction:column;align-items:flex-start;gap:12px;cursor:pointer;transition:.18s ease}
+.clinic-material-entry:hover{transform:translateY(-2px);border-color:rgba(79,225,194,.38);background:#0d211d}
+.clinic-material-entry strong{font-size:1.08rem;line-height:1.35}
+.clinic-material-entry small{margin-top:auto;color:#55dfc3;font-weight:800}
+.clinic-material-reader{max-width:720px;margin-top:28px;display:flex;flex-direction:column;gap:18px;align-items:flex-start}
+.clinic-material-back{border:0;background:transparent;color:#56dfc3;font-weight:850;padding:0;cursor:pointer}
+.clinic-material-cover-frame{width:min(100%,460px);aspect-ratio:3/4;border:1px solid rgba(79,225,194,.2);border-radius:20px;overflow:hidden;background:#091713;box-shadow:0 20px 55px rgba(0,0,0,.28)}
+.clinic-material-cover-frame img{width:100%;height:100%;object-fit:contain;background:#fff;display:block}
+.clinic-material-cover-pending{width:100%;height:100%;padding:34px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;gap:12px;background:radial-gradient(circle at 70% 18%,rgba(64,219,187,.18),transparent 30%),linear-gradient(145deg,#0d2a23,#06130f)}
+.clinic-material-cover-pending span{color:#55dfc3;text-transform:uppercase;font-size:.76rem;font-weight:900;letter-spacing:.12em}
+.clinic-material-cover-pending strong{font-size:clamp(1.6rem,4vw,2.4rem);line-height:1.06}
+.clinic-material-cover-pending small{color:#8ca79f}
+.clinic-pdf-button{width:min(100%,460px);border:0;border-radius:14px;padding:14px 18px;font-weight:900;background:linear-gradient(135deg,#42dfbd,#24a988);color:#06110f;cursor:pointer}
+.clinic-pdf-button:disabled{opacity:.48;cursor:not-allowed}
+@media(max-width:820px){.clinic-material-reader{width:100%}.clinic-material-cover-frame,.clinic-pdf-button{width:100%}.clinic-material-entry{min-height:116px}}
+'''
+CSS.write_text(css)
+
+print('Clínica finalizada: controles preservados, Complementares e Ferramentas Práticas preparados sem alterar Videoaulas.')
