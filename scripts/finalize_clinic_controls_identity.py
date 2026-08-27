@@ -1,72 +1,19 @@
 from pathlib import Path
-import base64
 import json
 import re
 
-DASHBOARD = Path('/frontend/src/ClinicLearningDashboard.jsx')
-CSS = Path('/frontend/src/clinic-learning-dashboard.css')
-LOGO_DATA = Path('/frontend/src/assets/clinic-logo-data.js')
-PUBLIC = Path('/frontend/public')
-MANIFEST = PUBLIC / 'manifest.webmanifest'
-INDEX = Path('/frontend/index.html')
-SW = PUBLIC / 'sw.js'
+ROOT = Path('/frontend')
+DASHBOARD = ROOT / 'src/ClinicLearningDashboard.jsx'
+CSS = ROOT / 'src/clinic-learning-dashboard.css'
+MANIFEST = ROOT / 'public/manifest.webmanifest'
+INDEX = ROOT / 'index.html'
+SW = ROOT / 'public/sw.js'
 
-# 1) Preservar controles validados: Sair da conta + Atualizar nas Aulas.
-text = DASHBOARD.read_text()
-
-account_block = '''        <button type="button" className={`clinic-course-account clinic-account-button${section === 'perfil' ? ' is-active' : ''}`} onClick={() => navigate('perfil')}>
-          <span className="clinic-account-avatar">{avatarUrl ? <img src={avatarUrl} alt="Foto do perfil" /> : initials}</span>
-          <span><strong>Minha conta</strong><small>Perfil e acesso</small></span>
-        </button>'''
-logout_block = account_block + '''
-        <button type="button" className="clinic-sidebar-logout" onClick={() => signOut({ redirectUrl: '/' })}>
-          <span aria-hidden="true">↪</span> Sair da conta
-        </button>'''
-if 'className="clinic-sidebar-logout"' not in text:
-    if account_block not in text:
-        raise RuntimeError('Âncora Minha conta não encontrada; nada foi alterado.')
-    text = text.replace(account_block, logout_block, 1)
-
-old_lessons_header = '''        {section === 'aulas' ? <><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><div className="clinic-filter-row">'''
-new_lessons_header = '''        {section === 'aulas' ? <><div className="clinic-lessons-header-row"><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><button type="button" className="clinic-refresh-button" onClick={() => window.location.reload()} aria-label="Atualizar página"><span aria-hidden="true">↻</span> Atualizar</button></div><div className="clinic-filter-row">'''
-if 'className="clinic-refresh-button"' not in text:
-    if old_lessons_header not in text:
-        raise RuntimeError('Cabeçalho das Aulas não encontrado; nada foi alterado.')
-    text = text.replace(old_lessons_header, new_lessons_header, 1)
-
-# IMPORTANTE: persistir os controles antes de qualquer releitura do dashboard.
-DASHBOARD.write_text(text)
-
-css = CSS.read_text()
-controls_marker = '/* clinic-controls-final-v2 */'
-if controls_marker not in css:
-    css += '''\n\n/* clinic-controls-final-v2 */
-.clinic-sidebar-logout{width:100%;margin-top:10px;border:1px solid rgba(255,104,114,.28);background:rgba(255,79,92,.06);color:#ff9aa2;padding:11px 14px;border-radius:12px;text-align:left;font-weight:800;font-size:.9rem;display:flex;gap:9px;align-items:center;cursor:pointer}
-.clinic-sidebar-logout:hover{background:rgba(255,79,92,.12);border-color:rgba(255,104,114,.42)}
-.clinic-lessons-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
-.clinic-refresh-button{flex:0 0 auto;border:1px solid rgba(79,225,194,.24);background:#0a1b17;color:#59e3c6;border-radius:12px;padding:10px 14px;font-weight:850;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.16)}
-.clinic-refresh-button:hover{background:#10251f;border-color:rgba(79,225,194,.42)}
-.clinic-refresh-button span{font-size:1.1rem;line-height:1}
-@media(max-width:820px){.clinic-lessons-header-row{align-items:flex-start}.clinic-refresh-button{margin-top:0;padding:10px 12px}.clinic-sidebar-logout{margin-top:8px}}
-'''
-CSS.write_text(css)
-
-# 2) Identidade PWA/Android da Clínica.
-logo_source = LOGO_DATA.read_text()
-match = re.search(r'data:image/webp;base64,([^"\\]+)', logo_source)
-if not match:
-    raise RuntimeError('Logo oficial da Clínica não encontrada em clinic-logo-data.js.')
-raw = base64.b64decode(match.group(1))
-(PUBLIC / 'clinic-app-icon.webp').write_bytes(raw)
-
+# 1) Preservar identidade PWA atual da Clínica.
 manifest = json.loads(MANIFEST.read_text())
-manifest['id'] = '/clinica-da-construcao-civil'
-manifest['start_url'] = '/#/'
-manifest['scope'] = '/'
 manifest['name'] = 'Clínica da Construção Civil'
 manifest['short_name'] = 'Clínica'
 manifest['description'] = 'Aprenda na prática elétrica, hidráulica, manutenção e serviços essenciais da construção civil.'
-manifest['display'] = 'standalone'
 manifest['background_color'] = '#031711'
 manifest['theme_color'] = '#031711'
 manifest['icons'] = [
@@ -91,7 +38,7 @@ if "'/clinic-app-icon.webp?v=4'" not in sw:
     sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-app-icon.webp?v=4',", 1)
 SW.write_text(sw)
 
-# 3) Reorganizar os cinco materiais sem tocar na lógica das videoaulas.
+# 2) Reorganizar os cinco materiais sem tocar na lógica das videoaulas.
 text = DASHBOARD.read_text()
 
 old_materials = '''const materials = [
@@ -101,7 +48,7 @@ old_materials = '''const materials = [
 ];'''
 new_materials = '''const complementaryMaterials = [
   { id: 'guia-eletrico', title: 'Guia de Comandos Elétricos', type: 'Guia', cover: '', url: '' },
-  { id: 'guia-hidraulico', title: 'Guia Hidráulica', type: 'Guia', cover: '/clinic-materials/guia-hidraulica-cover.webp', url: 'https://drive.google.com/file/d/1QvgFJimtLms5iDRMtjWgXJEsC_GKZmoy/view?usp=drivesdk' },
+  { id: 'guia-hidraulico', title: 'Guia Hidráulica', type: 'Guia', cover: '', url: '' },
   { id: 'primeiros-clientes', title: 'Como Conseguir os Primeiros Clientes', type: 'Guia prático', cover: '', url: '' },
 ];
 
@@ -180,9 +127,9 @@ if materials_marker not in css:
 .clinic-material-entry small{margin-top:auto;color:#55dfc3;font-weight:800}
 .clinic-material-reader{max-width:720px;margin-top:28px;display:flex;flex-direction:column;gap:18px;align-items:flex-start}
 .clinic-material-back{border:0;background:transparent;color:#56dfc3;font-weight:850;padding:0;cursor:pointer}
-.clinic-material-cover-frame{width:min(100%,460px);aspect-ratio:3/4;border:1px solid rgba(79,225,194,.2);border-radius:20px;overflow:hidden;background:#091713;box-shadow:0 20px 55px rgba(0,0,0,.28)}
-.clinic-material-cover-frame img{width:100%;height:100%;object-fit:contain;background:#fff;display:block}
-.clinic-material-cover-pending{width:100%;height:100%;padding:34px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;gap:12px;background:radial-gradient(circle at 70% 18%,rgba(64,219,187,.18),transparent 30%),linear-gradient(145deg,#0d2a23,#06130f)}
+.clinic-material-cover-frame{width:min(100%,460px);min-height:220px;border:1px solid rgba(79,225,194,.2);border-radius:20px;overflow:hidden;background:#091713;box-shadow:0 20px 55px rgba(0,0,0,.28)}
+.clinic-material-cover-frame img{width:100%;height:auto;object-fit:contain;background:transparent;display:block}
+.clinic-material-cover-pending{width:100%;min-height:580px;padding:34px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-end;gap:12px;background:radial-gradient(circle at 70% 18%,rgba(64,219,187,.18),transparent 30%),linear-gradient(145deg,#0d2a23,#06130f)}
 .clinic-material-cover-pending span{color:#55dfc3;text-transform:uppercase;font-size:.76rem;font-weight:900;letter-spacing:.12em}
 .clinic-material-cover-pending strong{font-size:clamp(1.6rem,4vw,2.4rem);line-height:1.06}
 .clinic-material-cover-pending small{color:#8ca79f}
@@ -190,6 +137,9 @@ if materials_marker not in css:
 .clinic-pdf-button:disabled{opacity:.48;cursor:not-allowed}
 @media(max-width:820px){.clinic-material-reader{width:100%}.clinic-material-cover-frame,.clinic-pdf-button{width:100%}.clinic-material-entry{min-height:116px}}
 '''
+else:
+    css = re.sub(r'\.clinic-material-cover-frame\{[^}]*\}', '.clinic-material-cover-frame{width:min(100%,460px);min-height:220px;border:1px solid rgba(79,225,194,.2);border-radius:20px;overflow:hidden;background:#091713;box-shadow:0 20px 55px rgba(0,0,0,.28)}', css, count=1)
+    css = re.sub(r'\.clinic-material-cover-frame img\{[^}]*\}', '.clinic-material-cover-frame img{width:100%;height:auto;object-fit:contain;background:transparent;display:block}', css, count=1)
 CSS.write_text(css)
 
-print('Clínica finalizada: cabeçalhos repetidos removidos de Complementares, Ferramentas Práticas e Faturamento; demais áreas preservadas.')
+print('Clínica finalizada: materiais organizados e proporções naturais das capas preservadas; demais áreas preservadas.')
