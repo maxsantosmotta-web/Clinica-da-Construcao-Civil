@@ -41,14 +41,28 @@ if cover_import not in text:
         raise RuntimeError('Import da logo da Clínica não encontrado; nada foi alterado.')
     text = text.replace(import_anchor, import_anchor + '\n' + cover_import, 1)
 
-# Tela final do novo Complementares: capa horizontal + acesso direto à pasta do Drive.
+# Guia Elétrico: aplicar classe somente a esse leitor/capa para corrigir a proporção,
+# sem modificar os outros Guias nem Ferramentas Práticas.
+guide_reader_old = '''{selectedMaterial ? <section className="clinic-material-reader"><button type="button" className="clinic-material-back" onClick={() => setSelectedMaterial(null)}>← Voltar aos complementares</button><div className="clinic-material-cover-frame">'''
+guide_reader_new = '''{selectedMaterial ? <section className={`clinic-material-reader${selectedMaterial?.id === 'guia-eletrico' ? ' clinic-guia-eletrico-reader' : ''}`}><button type="button" className="clinic-material-back" onClick={() => setSelectedMaterial(null)}>← Voltar aos complementares</button><div className={`clinic-material-cover-frame${selectedMaterial?.id === 'guia-eletrico' ? ' clinic-guia-eletrico-cover' : ''}`}>'''
+if 'clinic-guia-eletrico-cover' not in text:
+    if guide_reader_old not in text:
+        raise RuntimeError('Leitor validado de Guias não encontrado; nada foi alterado.')
+    text = text.replace(guide_reader_old, guide_reader_new, 1)
+
+# Tela final do novo Complementares: força uma única estrutura conhecida,
+# com capa horizontal do repositório e acesso direto ao Drive.
 drive_url = 'https://drive.google.com/drive/folders/1pIAJrpFP6C_XTCd1i5npUo-b0qPndyXS'
-placeholder_section = '''        {section === 'complementares-drive' ? <section className="clinic-material-reader"><div className="clinic-material-cover-frame"><div className="clinic-material-cover-pending"><span>Materiais complementares</span><strong>Clínica da Construção Civil</strong><small>Capa pronta para vinculação</small></div></div><button type="button" className="clinic-pdf-button" disabled>Acessar link</button></section> : null}'''
 final_section = f'''        {{section === 'complementares-drive' ? <section className="clinic-material-reader clinic-complementares-reader"><div className="clinic-material-cover-frame clinic-complementares-cover"><img src={{CLINIC_COMPLEMENTARES_COVER}} alt="Materiais Complementares — Clínica da Construção Civil" /></div><button type="button" className="clinic-pdf-button clinic-complementares-link" onClick={{() => window.open('{drive_url}', '_blank', 'noopener,noreferrer')}}>Acessar link</button></section> : null}}'''
-if placeholder_section in text:
-    text = text.replace(placeholder_section, final_section, 1)
-elif "section === 'complementares-drive' ? <section" in text and 'clinic-complementares-reader' not in text:
-    raise RuntimeError('Tela Complementares encontrada em formato inesperado; nada foi alterado.')
+
+section_pattern = re.compile(r"\s*\{section === 'complementares-drive' \? <section[^\n]*?</section> : null\}")
+if section_pattern.search(text):
+    text = section_pattern.sub('\n' + final_section, text, count=1)
+else:
+    ferramentas_anchor = '''        {section === 'ferramentas' ? <>{selectedMaterial ? <section'''
+    if ferramentas_anchor not in text:
+        raise RuntimeError('Âncora da tela Ferramentas Práticas não encontrada; nada foi alterado.')
+    text = text.replace(ferramentas_anchor, final_section + '\n\n' + ferramentas_anchor, 1)
 
 # Restaurar Sair da conta abaixo de Minha conta, sem alterar os demais itens do menu.
 account_block = '''        <button type="button" className={`clinic-course-account clinic-account-button${section === 'perfil' ? ' is-active' : ''}`} onClick={() => navigate('perfil')}>
@@ -74,23 +88,38 @@ if 'className="clinic-refresh-button"' not in text:
 
 DASHBOARD.write_text(text, encoding='utf-8')
 
-# Estilos finais isolados: não alteram Guias nem Ferramentas Práticas.
+# Estilos finais isolados.
 css = CSS.read_text(encoding='utf-8')
 marker = '/* clinic-final-controls-and-complementares-v1 */'
-if marker not in css:
-    css += '''\n\n/* clinic-final-controls-and-complementares-v1 */
+base_styles = '''
 .clinic-sidebar-logout{width:100%;margin-top:10px;border:1px solid rgba(79,225,194,.18);background:rgba(79,225,194,.04);color:#d9fff7;padding:11px 14px;border-radius:12px;text-align:left;font-weight:800;font-size:.9rem;display:flex;gap:9px;align-items:center;cursor:pointer}
 .clinic-sidebar-logout:hover{background:rgba(79,225,194,.09);border-color:rgba(79,225,194,.34)}
 .clinic-lessons-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
 .clinic-refresh-button{flex:0 0 auto;border:1px solid rgba(79,225,194,.24);background:#0a1b17;color:#59e3c6;border-radius:12px;padding:10px 14px;font-weight:850;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.16)}
 .clinic-refresh-button:hover{background:#10251f;border-color:rgba(79,225,194,.42)}
 .clinic-refresh-button span{font-size:1.1rem;line-height:1}
-.clinic-complementares-reader{max-width:900px}
-.clinic-complementares-cover{width:min(100%,900px);min-height:0;aspect-ratio:3/2;background:#091713}
-.clinic-complementares-cover img{width:100%;height:100%;object-fit:contain;background:transparent;display:block}
-.clinic-complementares-link{width:min(100%,900px)}
+.clinic-complementares-reader{width:100%;max-width:900px}
+.clinic-complementares-cover{width:100%;min-height:0;aspect-ratio:3/2;background:transparent}
+.clinic-complementares-cover img{width:100%;height:100%;object-fit:cover;background:transparent;display:block}
+.clinic-complementares-link{width:100%}
 @media(max-width:820px){.clinic-lessons-header-row{align-items:flex-start}.clinic-refresh-button{margin-top:0;padding:10px 12px}.clinic-sidebar-logout{margin-top:8px}.clinic-complementares-reader,.clinic-complementares-cover,.clinic-complementares-link{width:100%}}
 '''
-    CSS.write_text(css, encoding='utf-8')
+if marker not in css:
+    css += '\n\n' + marker + base_styles
+else:
+    css = re.sub(r'\.clinic-complementares-reader\{[^}]*\}', '.clinic-complementares-reader{width:100%;max-width:900px}', css, count=1)
+    css = re.sub(r'\.clinic-complementares-cover\{[^}]*\}', '.clinic-complementares-cover{width:100%;min-height:0;aspect-ratio:3/2;background:transparent}', css, count=1)
+    css = re.sub(r'\.clinic-complementares-cover img\{[^}]*\}', '.clinic-complementares-cover img{width:100%;height:100%;object-fit:cover;background:transparent;display:block}', css, count=1)
+    css = re.sub(r'\.clinic-complementares-link\{[^}]*\}', '.clinic-complementares-link{width:100%}', css, count=1)
 
-print('Clínica finalizada: Guias/Complementares preservados, capa e Drive ligados, Sair da conta e Atualizar restaurados.')
+guide_marker = '/* clinic-guia-eletrico-proportion-v1 */'
+if guide_marker not in css:
+    css += '''\n\n/* clinic-guia-eletrico-proportion-v1 */
+.clinic-guia-eletrico-reader{width:100%;max-width:720px}
+.clinic-guia-eletrico-cover{width:min(100%,460px);min-height:0;aspect-ratio:2/3;background:transparent}
+.clinic-guia-eletrico-cover img{width:100%;height:100%;object-fit:cover;background:transparent;display:block}
+@media(max-width:820px){.clinic-guia-eletrico-reader,.clinic-guia-eletrico-cover{width:100%}}
+'''
+
+CSS.write_text(css, encoding='utf-8')
+print('Guias: proporção do Comandos Elétricos corrigida. Complementares: capa horizontal e link do Drive finalizados. Controles preservados.')
