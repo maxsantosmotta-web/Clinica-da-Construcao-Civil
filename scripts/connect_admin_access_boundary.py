@@ -21,17 +21,17 @@ if wrapped_app not in source:
 
 path.write_text(source, encoding='utf-8')
 
-# Ajuste único e isolado: trocar apenas a imagem usada pelo splash do ADM.
-# O mesmo AccessLoading atende a entrada Painel Usuário -> ADM e a saída da conta pelo ADM.
+# Ajuste único e isolado: usar no splash exatamente o mesmo logo oficial
+# já usado no painel do usuário.
 admin_path = Path('/frontend/src/AdminAccessBoundary.jsx')
 admin_source = admin_path.read_text(encoding='utf-8')
 
-transparent_import = "import CLINIC_SPLASH_LOGO from './assets/file_000000008b74820e866b23c2ff27cc08.png';"
-if transparent_import not in admin_source:
+official_import = "import CLINIC_SPLASH_LOGO from './assets/clinic-logo-data.js';"
+if official_import not in admin_source:
     first_import = "import React, { useEffect, useState } from 'react';"
     if first_import not in admin_source:
         raise RuntimeError('Importação inicial do AdminAccessBoundary não encontrada.')
-    admin_source = admin_source.replace(first_import, f"{first_import}\n{transparent_import}", 1)
+    admin_source = admin_source.replace(first_import, f"{first_import}\n{official_import}", 1)
 
 old_loading_img = '<img src={DOMNAI_LOGO} alt="DomnAI" />'
 new_loading_img = '<img src={CLINIC_SPLASH_LOGO} alt="Clínica da Construção Civil" />'
@@ -49,4 +49,4 @@ if new_loading_img not in loading_block:
     admin_source = admin_source[:loading_function_start] + loading_block + admin_source[loading_function_end:]
 
 admin_path.write_text(admin_source, encoding='utf-8')
-print('Splash ADM: somente o logo quadrado foi substituído pelo logo transparente.')
+print('Splash ADM usando exatamente o mesmo logo oficial do painel do usuário.')
