@@ -1,5 +1,4 @@
-import re
-from datetime import date
+from datetime import date, datetime
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from pydantic import BaseModel, Field
@@ -17,43 +16,18 @@ MAX_AVATAR_BYTES = 5 * 1024 * 1024
 class ProfilePayload(BaseModel):
     full_name: str = Field(min_length=3, max_length=180)
     phone: str = Field(min_length=8, max_length=30)
-    cpf: str = Field(min_length=11, max_length=14)
-    birth_date: date
-    zip_code: str = Field(min_length=8, max_length=9)
-    street: str = Field(min_length=2, max_length=180)
-    number: str = Field(min_length=1, max_length=30)
-    complement: str = Field(default="", max_length=120)
-    lot: str = Field(default="", max_length=30)
-    block: str = Field(default="", max_length=30)
-    building: str = Field(default="", max_length=30)
-    apartment: str = Field(default="", max_length=30)
-    neighborhood: str = Field(min_length=2, max_length=120)
-    city: str = Field(min_length=2, max_length=120)
-    state: str = Field(min_length=2, max_length=2)
+    birth_date: str = Field(min_length=10, max_length=10)
 
 
 def _digits(value: str) -> str:
-    return re.sub(r"\D", "", value or "")
+    return "".join(char for char in (value or "") if char.isdigit())
 
 
-def _valid_cpf(value: str) -> bool:
-    cpf = _digits(value)
-    if len(cpf) != 11 or cpf == cpf[0] * 11:
-        return False
-
-    numbers = [int(char) for char in cpf]
-    first_sum = sum(numbers[index] * (10 - index) for index in range(9))
-    first_digit = (first_sum * 10) % 11
-    if first_digit == 10:
-        first_digit = 0
-    if first_digit != numbers[9]:
-        return False
-
-    second_sum = sum(numbers[index] * (11 - index) for index in range(10))
-    second_digit = (second_sum * 10) % 11
-    if second_digit == 10:
-        second_digit = 0
-    return second_digit == numbers[10]
+def _parse_birth_date(value: str) -> date:
+    try:
+        return datetime.strptime((value or "").strip(), "%d/%m/%Y").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Informe a data de nascimento no formato DD/MM/AAAA.")
 
 
 def _age_on_today(birth_date: date) -> int:
@@ -70,19 +44,7 @@ def _serialize(profile: UserProfile | None, has_avatar: bool = False) -> dict:
         "profile": {
             "fullName": profile.full_name,
             "phone": profile.phone,
-            "cpf": profile.cpf,
-            "birthDate": profile.birth_date.isoformat() if profile.birth_date else "",
-            "zipCode": profile.zip_code,
-            "street": profile.street,
-            "number": profile.number,
-            "complement": profile.complement,
-            "lot": profile.lot,
-            "block": profile.block,
-            "building": profile.building,
-            "apartment": profile.apartment,
-            "neighborhood": profile.neighborhood,
-            "city": profile.city,
-            "state": profile.state,
+            "birthDate": profile.birth_date.strftime("%d/%m/%Y") if profile.birth_date else "",
         },
     }
 
@@ -96,19 +58,14 @@ def get_profile(session: dict = Depends(require_authenticated_user)):
 
 @router.put("")
 def save_profile(payload: ProfilePayload, session: dict = Depends(require_authenticated_user)):
-    cpf = _digits(payload.cpf)
     phone = _digits(payload.phone)
-    zip_code = _digits(payload.zip_code)
+    birth_date = _parse_birth_date(payload.birth_date)
 
-    if not _valid_cpf(cpf):
-        raise HTTPException(status_code=400, detail="Informe um CPF válido.")
     if len(phone) < 10:
         raise HTTPException(status_code=400, detail="Informe um telefone válido com DDD.")
-    if len(zip_code) != 8:
-        raise HTTPException(status_code=400, detail="Informe um CEP válido com 8 dígitos.")
-    if payload.birth_date >= date.today():
+    if birth_date >= date.today():
         raise HTTPException(status_code=400, detail="Informe uma data de nascimento válida.")
-    if _age_on_today(payload.birth_date) < 18:
+    if _age_on_today(birth_date) < 18:
         raise HTTPException(status_code=400, detail="A Clínica da Construção Civil é destinada somente a maiores de 18 anos.")
 
     user_id = session.get("sub")
@@ -120,19 +77,7 @@ def save_profile(payload: ProfilePayload, session: dict = Depends(require_authen
 
         profile.full_name = payload.full_name.strip()
         profile.phone = phone
-        profile.cpf = cpf
-        profile.birth_date = payload.birth_date
-        profile.zip_code = zip_code
-        profile.street = payload.street.strip()
-        profile.number = payload.number.strip()
-        profile.complement = payload.complement.strip()
-        profile.lot = payload.lot.strip()
-        profile.block = payload.block.strip()
-        profile.building = payload.building.strip()
-        profile.apartment = payload.apartment.strip()
-        profile.neighborhood = payload.neighborhood.strip()
-        profile.city = payload.city.strip()
-        profile.state = payload.state.strip().upper()
+        profile.birth_date = birth_date
         profile.completed = 1
         db.flush()
         return _serialize(profile, db.get(UserAvatar, user_id) is not None)
