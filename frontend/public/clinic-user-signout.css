@@ -1,6 +1,8 @@
-/* Ajuste isolado: padroniza somente o botão "Sair da conta" do painel do usuário. */
-html body .clinic-profile-actions .danger {
+/* Ajuste isolado: padroniza somente o botão "Sair da conta" do painel do usuário para o padrão visual do ADM. */
+html body .clinic-sidebar-logout {
+  width: 100% !important;
   min-height: 36px !important;
+  margin-top: 8px !important;
   padding: 0 4px !important;
   border: 0 !important;
   border-radius: 8px !important;
@@ -15,14 +17,13 @@ html body .clinic-profile-actions .danger {
   font-weight: 700 !important;
 }
 
-html body .clinic-profile-actions .danger::before {
-  content: "↪";
-  color: #4fe1c2;
-  font-size: 1rem;
+html body .clinic-sidebar-logout > span {
+  color: #4fe1c2 !important;
+  font-size: 1rem !important;
 }
 
-html body .clinic-profile-actions .danger:hover,
-html body .clinic-profile-actions .danger:focus-visible {
+html body .clinic-sidebar-logout:hover,
+html body .clinic-sidebar-logout:focus-visible {
   background: rgba(79, 225, 194, 0.08) !important;
   color: #75f1d5 !important;
   outline: none !important;
