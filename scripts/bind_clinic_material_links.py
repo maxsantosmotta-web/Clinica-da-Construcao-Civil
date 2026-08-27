@@ -33,8 +33,8 @@ if "navigate('complementares-drive')" not in text:
         raise RuntimeError('Navegação validada de Complementares/Ferramentas não encontrada; nada foi alterado.')
     text = text.replace(old_nav, new_nav, 1)
 
-# Capa horizontal já existente no repositório.
-cover_import = "import CLINIC_COMPLEMENTARES_COVER from './assets/file_000000008b74820e866b23c2ff27cc08.png';"
+# Capa correta de Complementares: exatamente a arte horizontal aprovada pelo usuário.
+cover_import = "import CLINIC_COMPLEMENTARES_COVER from './assets/clinic-complementares-cover-data.js';"
 if cover_import not in text:
     import_anchor = "import CLINIC_LOGO from './assets/clinic-logo-data.js';"
     if import_anchor not in text:
@@ -51,7 +51,7 @@ if 'clinic-guia-eletrico-cover' not in text:
     text = text.replace(guide_reader_old, guide_reader_new, 1)
 
 # Tela final do novo Complementares: força uma única estrutura conhecida,
-# com capa horizontal do repositório e acesso direto ao Drive.
+# com a capa correta e acesso direto ao Drive.
 drive_url = 'https://drive.google.com/drive/folders/1pIAJrpFP6C_XTCd1i5npUo-b0qPndyXS'
 final_section = f'''        {{section === 'complementares-drive' ? <section className="clinic-material-reader clinic-complementares-reader"><div className="clinic-material-cover-frame clinic-complementares-cover"><img src={{CLINIC_COMPLEMENTARES_COVER}} alt="Materiais Complementares — Clínica da Construção Civil" /></div><button type="button" className="clinic-pdf-button clinic-complementares-link" onClick={{() => window.open('{drive_url}', '_blank', 'noopener,noreferrer')}}>Acessar link</button></section> : null}}'''
 
@@ -122,4 +122,4 @@ if guide_marker not in css:
 '''
 
 CSS.write_text(css, encoding='utf-8')
-print('Guias: proporção do Comandos Elétricos corrigida. Complementares: capa horizontal e link do Drive finalizados. Controles preservados.')
+print('Guias preservados. Complementares usa exatamente a capa aprovada e mantém o link do Drive. Controles preservados.')
