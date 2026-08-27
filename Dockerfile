@@ -57,6 +57,7 @@ COPY scripts/stabilize_artifact_build.py /tmp/stabilize_artifact_build.py
 COPY scripts/finalize_single_artifact_delivery.py /tmp/finalize_single_artifact_delivery.py
 COPY scripts/connect_course_video_upload_route.py /tmp/connect_course_video_upload_route.py
 COPY scripts/finalize_clinic_controls_identity.py /tmp/finalize_clinic_controls_identity.py
+COPY scripts/bind_clinic_material_links.py /tmp/bind_clinic_material_links.py
 COPY scripts/validate_frontend_dist.py /tmp/validate_frontend_dist.py
 RUN apk add --no-cache python3 imagemagick \
     && python3 /tmp/connect_domnai_chat.py \
@@ -112,6 +113,7 @@ RUN apk add --no-cache python3 imagemagick \
     && python3 /tmp/finalize_single_artifact_delivery.py \
     && python3 /tmp/connect_course_video_upload_route.py \
     && python3 /tmp/finalize_clinic_controls_identity.py \
+    && python3 /tmp/bind_clinic_material_links.py \
     && npm run build \
     && python3 /tmp/validate_frontend_dist.py
 
