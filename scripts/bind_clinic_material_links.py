@@ -88,6 +88,75 @@ if 'className="clinic-refresh-button"' not in text:
         raise RuntimeError('Cabeçalho das Aulas não encontrado; nada foi alterado.')
     text = text.replace(old_lessons_header, new_lessons_header, 1)
 
+# Perfil: data de nascimento digitada em DD/MM/AAAA, sem calendário nativo.
+helpers_anchor = '''function ProfileField({ label, value, onChange, type = 'text', required = false }) {
+  return <label className="clinic-profile-field"><span>{label}</span><input type={type} value={value || ''} required={required} onChange={(e) => onChange(e.target.value)} /></label>;
+}'''
+helpers_block = helpers_anchor + '''
+
+function formatBirthDateInput(value) {
+  const digits = String(value || '').replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+function birthDateForInput(value) {
+  const raw = String(value || '').trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return formatBirthDateInput(raw);
+}
+
+function birthDateToIso(value) {
+  const raw = String(value || '').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const candidate = new Date(Date.UTC(year, month - 1, day));
+  if (candidate.getUTCFullYear() !== year || candidate.getUTCMonth() !== month - 1 || candidate.getUTCDate() !== day) return '';
+  return `${match[3]}-${match[2]}-${match[1]}`;
+}'''
+if 'function formatBirthDateInput(value)' not in text:
+    if helpers_anchor not in text:
+        raise RuntimeError('Componente ProfileField não encontrado; nada foi alterado.')
+    text = text.replace(helpers_anchor, helpers_block, 1)
+
+old_profile_load = '''      setProfile({ ...emptyProfile, ...(payload.profile || {}) });'''
+new_profile_load = '''      setProfile({ ...emptyProfile, ...(payload.profile || {}), birthDate: birthDateForInput(payload.profile?.birthDate || '') });'''
+if old_profile_load in text:
+    text = text.replace(old_profile_load, new_profile_load, 1)
+
+old_fetch_start = '''    try {
+      const response = await authorizedFetch('/api/profile', {
+        method: 'PUT','''
+new_fetch_start = '''    try {
+      const birthDateIso = birthDateToIso(profile.birthDate);
+      if (!birthDateIso) throw new Error('Informe a data de nascimento no formato DD/MM/AAAA.');
+      const response = await authorizedFetch('/api/profile', {
+        method: 'PUT','''
+if 'const birthDateIso = birthDateToIso(profile.birthDate);' not in text:
+    if old_fetch_start not in text:
+        raise RuntimeError('Início do salvamento de perfil não encontrado; nada foi alterado.')
+    text = text.replace(old_fetch_start, new_fetch_start, 1)
+
+text = text.replace('birth_date: profile.birthDate,', 'birth_date: birthDateIso,', 1)
+old_saved_profile = '''      setProfile({ ...emptyProfile, ...(payload.profile || profile) });'''
+new_saved_profile = '''      const savedProfile = payload.profile || profile;
+      setProfile({ ...emptyProfile, ...savedProfile, birthDate: birthDateForInput(savedProfile.birthDate || profile.birthDate) });'''
+if old_saved_profile in text:
+    text = text.replace(old_saved_profile, new_saved_profile, 1)
+
+old_birth_field = '''<ProfileField label="Data de nascimento" type="date" value={profile.birthDate} onChange={(v) => updateProfile('birthDate', v)} required />'''
+new_birth_field = '''<label className="clinic-profile-field"><span>Data de nascimento</span><input type="text" inputMode="numeric" autoComplete="bday" placeholder="DD/MM/AAAA" maxLength={10} value={profile.birthDate || ''} required onChange={(e) => updateProfile('birthDate', formatBirthDateInput(e.target.value))} /></label>'''
+if old_birth_field in text:
+    text = text.replace(old_birth_field, new_birth_field, 1)
+elif 'placeholder="DD/MM/AAAA"' not in text:
+    raise RuntimeError('Campo Data de nascimento não encontrado; nada foi alterado.')
+
 DASHBOARD.write_text(text, encoding='utf-8')
 
 css = CSS.read_text(encoding='utf-8')
@@ -123,4 +192,4 @@ if guide_marker not in css:
 '''
 
 CSS.write_text(css, encoding='utf-8')
-print('Painel inicial atualizado para 6 materiais; restante preservado.')
+print('Painel inicial atualizado para 6 materiais; perfil usa data digitada DD/MM/AAAA; restante preservado.')
