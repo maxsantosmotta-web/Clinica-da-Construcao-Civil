@@ -101,7 +101,7 @@ old_materials = '''const materials = [
 ];'''
 new_materials = '''const complementaryMaterials = [
   { id: 'guia-eletrico', title: 'Guia de Comandos Elétricos', type: 'Guia', cover: '', url: '' },
-  { id: 'guia-hidraulico', title: 'Guia Hidráulica', type: 'Guia', cover: '', url: '' },
+  { id: 'guia-hidraulico', title: 'Guia Hidráulica', type: 'Guia', cover: '/clinic-materials/guia-hidraulica-cover.webp', url: 'https://drive.google.com/file/d/1QvgFJimtLms5iDRMtjWgXJEsC_GKZmoy/view?usp=drivesdk' },
   { id: 'primeiros-clientes', title: 'Como Conseguir os Primeiros Clientes', type: 'Guia prático', cover: '', url: '' },
 ];
 
