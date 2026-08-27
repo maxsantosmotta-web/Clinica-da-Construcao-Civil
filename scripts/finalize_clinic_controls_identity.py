@@ -11,8 +11,9 @@ MANIFEST = PUBLIC / 'manifest.webmanifest'
 INDEX = Path('/frontend/index.html')
 SW = PUBLIC / 'sw.js'
 
-# 1) Botão Sair abaixo de Minha conta no menu lateral.
+# 1) Preservar controles validados: Sair da conta + Atualizar nas Aulas.
 text = DASHBOARD.read_text()
+
 account_block = '''        <button type="button" className={`clinic-course-account clinic-account-button${section === 'perfil' ? ' is-active' : ''}`} onClick={() => navigate('perfil')}>
           <span className="clinic-account-avatar">{avatarUrl ? <img src={avatarUrl} alt="Foto do perfil" /> : initials}</span>
           <span><strong>Minha conta</strong><small>Perfil e acesso</small></span>
@@ -26,7 +27,6 @@ if 'className="clinic-sidebar-logout"' not in text:
         raise RuntimeError('Âncora Minha conta não encontrada; nada foi alterado.')
     text = text.replace(account_block, logout_block, 1)
 
-# 2) Botão Atualizar no topo direito da tela Aulas.
 old_lessons_header = '''        {section === 'aulas' ? <><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><div className="clinic-filter-row">'''
 new_lessons_header = '''        {section === 'aulas' ? <><div className="clinic-lessons-header-row"><header className="clinic-course-header"><span>Videoaulas</span><h1>Aulas do treinamento</h1><p>Elétrica e Hidráulica organizadas por aula.</p></header><button type="button" className="clinic-refresh-button" onClick={() => window.location.reload()} aria-label="Atualizar página"><span aria-hidden="true">↻</span> Atualizar</button></div><div className="clinic-filter-row">'''
 if 'className="clinic-refresh-button"' not in text:
@@ -34,16 +34,30 @@ if 'className="clinic-refresh-button"' not in text:
         raise RuntimeError('Cabeçalho das Aulas não encontrado; nada foi alterado.')
     text = text.replace(old_lessons_header, new_lessons_header, 1)
 
-# 3) Identidade PWA/Android usando a logo oficial já existente no projeto.
-# Publica diretamente o WEBP oficial e força uma NOVA identidade de instalação
-# para não reutilizar o WebAPK/PWA antigo que ainda carrega DomnAI no Android.
+# IMPORTANTE: persistir os controles antes de qualquer releitura do dashboard.
+DASHBOARD.write_text(text)
+
+css = CSS.read_text()
+controls_marker = '/* clinic-controls-final-v2 */'
+if controls_marker not in css:
+    css += '''\n\n/* clinic-controls-final-v2 */
+.clinic-sidebar-logout{width:100%;margin-top:10px;border:1px solid rgba(255,104,114,.28);background:rgba(255,79,92,.06);color:#ff9aa2;padding:11px 14px;border-radius:12px;text-align:left;font-weight:800;font-size:.9rem;display:flex;gap:9px;align-items:center;cursor:pointer}
+.clinic-sidebar-logout:hover{background:rgba(255,79,92,.12);border-color:rgba(255,104,114,.42)}
+.clinic-lessons-header-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.clinic-refresh-button{flex:0 0 auto;border:1px solid rgba(79,225,194,.24);background:#0a1b17;color:#59e3c6;border-radius:12px;padding:10px 14px;font-weight:850;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.16)}
+.clinic-refresh-button:hover{background:#10251f;border-color:rgba(79,225,194,.42)}
+.clinic-refresh-button span{font-size:1.1rem;line-height:1}
+@media(max-width:820px){.clinic-lessons-header-row{align-items:flex-start}.clinic-refresh-button{margin-top:0;padding:10px 12px}.clinic-sidebar-logout{margin-top:8px}}
+'''
+CSS.write_text(css)
+
+# 2) Identidade PWA/Android da Clínica.
 logo_source = LOGO_DATA.read_text()
 match = re.search(r'data:image/webp;base64,([^"\\]+)', logo_source)
 if not match:
     raise RuntimeError('Logo oficial da Clínica não encontrada em clinic-logo-data.js.')
 raw = base64.b64decode(match.group(1))
-icon_webp = PUBLIC / 'clinic-app-icon.webp'
-icon_webp.write_bytes(raw)
+(PUBLIC / 'clinic-app-icon.webp').write_bytes(raw)
 
 manifest = json.loads(MANIFEST.read_text())
 manifest['id'] = '/clinica-da-construcao-civil'
@@ -77,8 +91,7 @@ if "'/clinic-app-icon.webp?v=4'" not in sw:
     sw = sw.replace("  '/manifest.webmanifest',", "  '/manifest.webmanifest',\n  '/clinic-app-icon.webp?v=4',", 1)
 SW.write_text(sw)
 
-# 4) Organiza os cinco materiais já definidos sem alterar a tela das videoaulas.
-# Nesta etapa os slots de capa/PDF ficam preparados para receber os arquivos finais.
+# 3) Reorganizar os cinco materiais sem tocar na lógica das videoaulas.
 text = DASHBOARD.read_text()
 
 old_materials = '''const materials = [
@@ -174,4 +187,4 @@ if materials_marker not in css:
 '''
 CSS.write_text(css)
 
-print('Clínica finalizada: controles preservados, Complementares e Ferramentas Práticas preparados sem alterar Videoaulas.')
+print('Clínica finalizada: Sair e Atualizar preservados; Complementares e Ferramentas Práticas organizados; Videoaulas intactas.')
