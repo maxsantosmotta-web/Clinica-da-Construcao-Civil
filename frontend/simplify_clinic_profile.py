@@ -1,55 +1,78 @@
 from pathlib import Path
+import re
 
 DASHBOARD = Path('/frontend/src/ClinicLearningDashboard.jsx')
 text = DASHBOARD.read_text(encoding='utf-8')
 
-old_field = "function ProfileField({ label, value, onChange, type = 'text', required = false }) {\n  return <label className=\"clinic-profile-field\"><span>{label}</span><input type={type} value={value || ''} required={required} onChange={(e) => onChange(e.target.value)} /></label>;\n}"
-new_field = "function ProfileField({ label, value, onChange, type = 'text', required = false, placeholder = '', disabled = false }) {\n  return <label className=\"clinic-profile-field\"><span>{label}</span><input type={type} value={value || ''} required={required} placeholder={placeholder} disabled={disabled} onChange={(e) => onChange?.(e.target.value)} /></label>;\n}\n\nfunction maskBirthDate(value) {\n  const digits = String(value || '').replace(/\\D/g, '').slice(0, 8);\n  if (digits.length <= 2) return digits;\n  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;\n  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;\n}"
-if old_field in text:
-    text = text.replace(old_field, new_field, 1)
-elif 'function maskBirthDate(value)' not in text:
-    raise RuntimeError('ProfileField esperado não encontrado.')
+# Este script roda depois de bind_clinic_material_links.py. Portanto trabalha
+# sobre o estado FINAL intermediário do dashboard e é idempotente.
 
-old_effect = "  useEffect(() => {\n    if (section === 'perfil' && !profileLoaded) loadProfile();\n  }, [section, profileLoaded]);"
-new_effect = "  useEffect(() => {\n    if (user && !profileLoaded) loadProfile();\n  }, [user, profileLoaded]);"
-if old_effect in text:
-    text = text.replace(old_effect, new_effect, 1)
+# Perfil mínimo: somente nome, telefone, nascimento e foto.
+text = re.sub(
+    r"const emptyProfile = \{.*?\};",
+    "const emptyProfile = { fullName: '', phone: '', birthDate: '' };",
+    text,
+    count=1,
+    flags=re.S,
+)
 
-old_body = """        body: JSON.stringify({
-          full_name: profile.fullName, phone: profile.phone, cpf: profile.cpf, birth_date: profile.birthDate,
-          zip_code: profile.zipCode, street: profile.street, number: profile.number, complement: profile.complement,
-          lot: profile.lot, block: profile.block, building: profile.building, apartment: profile.apartment,
-          neighborhood: profile.neighborhood, city: profile.city, state: profile.state,
-        }),"""
-new_body = """        body: JSON.stringify({
-          full_name: profile.fullName,
-          phone: profile.phone,
-          birth_date: profile.birthDate,
-        }),"""
-if old_body in text:
-    text = text.replace(old_body, new_body, 1)
-elif 'cpf: profile.cpf' in text:
-    raise RuntimeError('Payload antigo do perfil ainda existe em formato inesperado.')
+# O perfil deve ser carregado assim que houver usuário, para o nome aparecer
+# também no menu lateral sem exigir que a pessoa abra primeiro Minha conta.
+text = text.replace(
+    "  useEffect(() => {\n    if (section === 'perfil' && !profileLoaded) loadProfile();\n  }, [section, profileLoaded]);",
+    "  useEffect(() => {\n    if (user && !profileLoaded) loadProfile();\n  }, [user, profileLoaded]);",
+    1,
+)
 
-old_error = "      if (!response.ok) throw new Error(payload.detail || 'Não foi possível salvar as alterações.');"
-new_error = "      if (!response.ok) {\n        const detail = typeof payload.detail === 'string' ? payload.detail : Array.isArray(payload.detail) ? payload.detail.map((item) => item?.msg).filter(Boolean).join(' · ') : '';\n        throw new Error(detail || 'Não foi possível salvar as alterações.');\n      }"
-if old_error in text:
-    text = text.replace(old_error, new_error, 1)
+# O bind anterior já cria birthDateToIso. Se não existir, interromper o build:
+# isso prova que a ordem esperada do pipeline não foi respeitada.
+if 'function birthDateToIso(value)' not in text:
+    raise RuntimeError('Conversor de data DD/MM/AAAA não encontrado após bind_clinic_material_links.py.')
 
-old_account = '<span><strong>Minha conta</strong><small>Perfil e acesso</small></span>'
-new_account = "<span><strong>{profile.fullName || user?.fullName || 'Minha conta'}</strong><small>Perfil e acesso</small></span>"
-if old_account in text:
-    text = text.replace(old_account, new_account, 1)
+# Salvar somente os três dados essenciais. Aceita o estado já transformado
+# pelo bind (birthDateIso), sem procurar payload antigo por igualdade exata.
+payload_pattern = re.compile(
+    r"body: JSON\.stringify\(\{\s*full_name: profile\.fullName,.*?\}\),",
+    re.S,
+)
+replacement = "body: JSON.stringify({\n          full_name: profile.fullName,\n          phone: profile.phone,\n          birth_date: birthDateIso,\n        }),"
+text, payload_count = payload_pattern.subn(replacement, text, count=1)
+if payload_count != 1:
+    raise RuntimeError('Payload de salvamento do perfil não localizado no dashboard final intermediário.')
 
+# Exibir mensagens de validação do backend sem [object Object].
+text = text.replace(
+    "      if (!response.ok) throw new Error(payload.detail || 'Não foi possível salvar as alterações.');",
+    "      if (!response.ok) {\n        const detail = typeof payload.detail === 'string' ? payload.detail : Array.isArray(payload.detail) ? payload.detail.map((item) => item?.msg).filter(Boolean).join(' · ') : '';\n        throw new Error(detail || 'Não foi possível salvar as alterações.');\n      }",
+    1,
+)
+
+# Nome real no menu lateral.
+text = text.replace(
+    '<span><strong>Minha conta</strong><small>Perfil e acesso</small></span>',
+    "<span><strong>{profile.fullName || user?.fullName || 'Minha conta'}</strong><small>Perfil e acesso</small></span>",
+    1,
+)
+
+# Remover estado exclusivo do endereço, se ainda existir.
+text = text.replace("  const [showMoreAddress, setShowMoreAddress] = useState(false);\n", "", 1)
+
+# Substituir Dados pessoais + Endereço por formulário mínimo. A foto permanece
+# no cartão-resumo imediatamente anterior.
 start = '<section className="clinic-profile-card"><h2>Dados pessoais</h2>'
 end = '{profileMessage ? <div className="clinic-profile-message">'
 start_index = text.find(start)
 end_index = text.find(end, start_index)
 if start_index == -1 or end_index == -1:
-    raise RuntimeError('Área de dados pessoais/endereço não encontrada.')
+    raise RuntimeError('Área de Dados pessoais/Endereço não localizada para simplificação.')
 
-minimal = '''<section className="clinic-profile-card"><h2>Dados pessoais</h2><p>Informações essenciais da sua conta.</p><div className="clinic-profile-grid"><ProfileField label="Nome completo" value={profile.fullName} onChange={(v) => updateProfile('fullName', v)} required /><ProfileField label="E-mail" type="email" value={email} disabled /><ProfileField label="Telefone" value={profile.phone} onChange={(v) => updateProfile('phone', v)} required /><ProfileField label="Data de nascimento" value={profile.birthDate} placeholder="DD/MM/AAAA" onChange={(v) => updateProfile('birthDate', maskBirthDate(v))} required /></div></section>'''
+minimal = '''<section className="clinic-profile-card"><h2>Dados pessoais</h2><p>Informações essenciais da sua conta.</p><div className="clinic-profile-grid"><ProfileField label="Nome completo" value={profile.fullName} onChange={(v) => updateProfile('fullName', v)} required /><ProfileField label="Telefone" value={profile.phone} onChange={(v) => updateProfile('phone', v)} required /><label className="clinic-profile-field"><span>Data de nascimento</span><input type="text" inputMode="numeric" autoComplete="bday" placeholder="DD/MM/AAAA" maxLength={10} value={profile.birthDate || ''} required onChange={(e) => updateProfile('birthDate', formatBirthDateInput(e.target.value))} /></label></div></section>'''
 text = text[:start_index] + minimal + text[end_index:]
 
+# Provas negativas: nenhum campo removido pode continuar no JSX/payload final.
+for forbidden in ['label="CPF"', 'label="CEP"', 'label="Rua"', 'profile.cpf', 'profile.zipCode', 'showMoreAddress']:
+    if forbidden in text:
+        raise RuntimeError(f'Campo removido ainda presente após simplificação: {forbidden}')
+
 DASHBOARD.write_text(text, encoding='utf-8')
-print('Perfil da Clínica simplificado para nome, e-mail, telefone, nascimento e foto.')
+print('Perfil final da Clínica: foto, nome, telefone e data de nascimento; sem CPF/endereço.')
