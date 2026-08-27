@@ -33,12 +33,14 @@ if "navigate('complementares-drive')" not in text:
         raise RuntimeError('Navegação validada de Complementares/Ferramentas não encontrada; nada foi alterado.')
     text = text.replace(old_nav, new_nav, 1)
 
-# Capa correta de Complementares: exatamente a arte horizontal aprovada pelo usuário.
-cover_import = "import CLINIC_COMPLEMENTARES_COVER from './assets/clinic-complementares-cover-data.js';"
+# Capa correta de Complementares: usar diretamente o arquivo físico enviado pelo usuário em frontend/src/assets.
+cover_import = "import CLINIC_COMPLEMENTARES_COVER from './assets/file_0000000035d8820ebf8712ddf4e37326.png';"
 if cover_import not in text:
     import_anchor = "import CLINIC_LOGO from './assets/clinic-logo-data.js';"
     if import_anchor not in text:
         raise RuntimeError('Import da logo da Clínica não encontrado; nada foi alterado.')
+    # Remove qualquer import antigo da capa de Complementares antes de inserir o arquivo físico correto.
+    text = re.sub(r"\nimport CLINIC_COMPLEMENTARES_COVER from './assets/[^']+';", '', text, count=1)
     text = text.replace(import_anchor, import_anchor + '\n' + cover_import, 1)
 
 # Guia Elétrico: aplicar classe somente a esse leitor/capa para corrigir a proporção,
@@ -122,4 +124,4 @@ if guide_marker not in css:
 '''
 
 CSS.write_text(css, encoding='utf-8')
-print('Guias preservados. Complementares usa exatamente a capa aprovada e mantém o link do Drive. Controles preservados.')
+print('Guias preservados. Complementares usa o arquivo físico correto enviado pelo usuário e mantém o link do Drive. Controles preservados.')
