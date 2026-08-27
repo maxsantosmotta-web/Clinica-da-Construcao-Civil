@@ -76,7 +76,10 @@
 
   function applyLessonContent() {
     const grid = document.querySelector('.clinic-lessons-grid');
-    if (!grid) return;
+    if (!grid) {
+      document.querySelector('.clinic-welcome-block')?.remove();
+      return;
+    }
     ensureWelcome();
 
     const activeFilter = (document.querySelector('.clinic-filter-row button.is-active')?.textContent || 'Todos').trim().toLowerCase();
