@@ -268,8 +268,6 @@ def create_checkout(payload: CheckoutRequest, session: dict = Depends(require_au
     user_id = session.get("sub")
     price_id, mode = _price_id(payload.product)
     with session_scope() as db:
-        if mode == "subscription":
-            _require_completed_profile(db, user_id)
         account = _get_or_create_account(db, user_id)
         customer_id = account.stripe_customer_id
     metadata = {"user_id": user_id, "product": payload.product}
