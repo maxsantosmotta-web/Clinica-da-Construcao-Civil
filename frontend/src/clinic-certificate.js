@@ -1,10 +1,10 @@
-import CLINIC_LOGO from './assets/clinic-logo-data.js';
 import './clinic-certificate.css';
 
 function certificateStorageKey() {
   const userId = window.__clinicCourseProgress?.userId || 'local';
   return `clinic:certificate-completed-at:${userId}`;
 }
+
 let certificateModal = null;
 let scheduled = false;
 
@@ -49,14 +49,6 @@ function formatTime(date) {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
-function safeFileName(name) {
-  return String(name || 'aluno')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'aluno';
-}
-
 async function getClerkToken() {
   try {
     if (window.Clerk?.session?.getToken) return await window.Clerk.session.getToken();
@@ -64,55 +56,66 @@ async function getClerkToken() {
   return null;
 }
 
-async function generateCertificatePdf({ name, completionDate, typedSignature }) {
+async function certificateFetch(path, options = {}) {
   const token = await getClerkToken();
   if (!token) throw new Error('Não foi possível confirmar sua sessão. Atualize a página e tente novamente.');
-
-  const response = await fetch('/api/certificate/pdf', {
-    method: 'POST',
+  const response = await fetch(path, {
+    ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {}),
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      name,
-      completed_at: completionDate.toISOString(),
-      typed_signature: typedSignature,
-      logo_data_uri: CLINIC_LOGO,
-    }),
+    cache: 'no-store',
   });
-
   if (!response.ok) {
     const payload = await response.json().catch(() => ({}));
-    throw new Error(payload.detail || 'Não foi possível gerar o certificado em PDF.');
+    throw new Error(payload.detail || 'Não foi possível acessar o certificado.');
   }
-
-  const blob = await response.blob();
-  if (!blob.size) throw new Error('O arquivo do certificado foi gerado vazio. Tente novamente.');
-  const filename = `Certificado-${safeFileName(name)}.pdf`;
-  return { blob, filename };
+  return response;
 }
 
-function downloadPdf(blob, filename) {
+async function getCertificateStatus() {
+  const response = await certificateFetch('/api/certificate/status');
+  return response.json();
+}
+
+async function issueCertificate({ name, completionDate, typedSignature }) {
+  const response = await certificateFetch('/api/certificate/issue', {
+    method: 'POST',
+    body: JSON.stringify({ name, completed_at: completionDate.toISOString(), typed_signature: typedSignature }),
+  });
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('O arquivo do certificado foi gerado vazio. Tente novamente.');
+  return blob;
+}
+
+async function getCurrentCertificate() {
+  const response = await certificateFetch('/api/certificate/pdf');
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('O arquivo do certificado está vazio. Tente novamente.');
+  return blob;
+}
+
+function openPdf(blob) {
   const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+  const opened = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!opened) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
+  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 async function sharePdf(blob, filename) {
-  const file = new File([blob], filename, { type: 'application/pdf' });
+  const file = new File([blob], filename || 'Certificado.pdf', { type: 'application/pdf' });
   if (navigator.share && navigator.canShare?.({ files: [file] })) {
-    await navigator.share({
-      title: 'Certificado de Conclusão',
-      text: 'Certificado de Conclusão — Clínica da Construção Civil',
-      files: [file],
-    });
+    await navigator.share({ title: 'Certificado de Conclusão', text: 'Certificado de Conclusão — Clínica da Construção Civil', files: [file] });
     return true;
   }
   return false;
@@ -123,7 +126,19 @@ function closeCertificateModal() {
   certificateModal = null;
 }
 
-function openCertificateModal() {
+function escaped(value) {
+  return String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function signatureOptions(typedSignature = true) {
+  return `<fieldset class="clinic-certificate-signature-options"><legend>Assinatura do aluno</legend><label><input type="radio" name="clinic-certificate-signature" value="typed" ${typedSignature ? 'checked' : ''} /> Assinar digitando o nome</label><label><input type="radio" name="clinic-certificate-signature" value="manual" ${typedSignature ? '' : 'checked'} /> Deixar em branco para imprimir e assinar depois</label></fieldset>`;
+}
+
+function issuanceForm({ completionDate, currentName = '', typedSignature = true, correction = false }) {
+  return `<div class="clinic-certificate-meta"><div><span>Data da conclusão</span><strong>${formatDate(completionDate)}</strong></div><div><span>Horário</span><strong>${formatTime(completionDate)}</strong></div></div><label class="clinic-certificate-field"><span>Nome completo</span><input type="text" id="clinic-certificate-name" autocomplete="name" value="${escaped(currentName)}" placeholder="Digite o nome que aparecerá no certificado" /></label>${signatureOptions(typedSignature)}<div class="clinic-certificate-actions"><button type="button" class="clinic-certificate-issue">${correction ? 'Emitir correção do certificado' : 'Emitir certificado'}</button></div><div class="clinic-certificate-message" aria-live="polite"></div>`;
+}
+
+async function openCertificateModal() {
   closeCertificateModal();
   const progress = readProgress();
   const completionDate = getCompletionDate(progress);
@@ -131,89 +146,73 @@ function openCertificateModal() {
 
   certificateModal = document.createElement('div');
   certificateModal.className = 'clinic-certificate-overlay';
-  certificateModal.innerHTML = `
-    <section class="clinic-certificate-modal" role="dialog" aria-modal="true" aria-labelledby="clinic-certificate-title">
-      <button type="button" class="clinic-certificate-close" aria-label="Fechar">×</button>
-      <span class="clinic-certificate-kicker">Certificado de conclusão</span>
-      <h2 id="clinic-certificate-title">${unlocked ? 'Seu certificado está disponível' : 'Certificado bloqueado'}</h2>
-      <p>${unlocked ? 'A conclusão foi reconhecida automaticamente pelo contador de progresso.' : `Seu progresso atual é ${progress}%. O certificado será liberado automaticamente quando o contador chegar a 100%.`}</p>
-      ${unlocked ? `
-        <div class="clinic-certificate-meta"><div><span>Data da conclusão</span><strong>${formatDate(completionDate)}</strong></div><div><span>Horário</span><strong>${formatTime(completionDate)}</strong></div></div>
-        <label class="clinic-certificate-field"><span>Nome completo</span><input type="text" id="clinic-certificate-name" autocomplete="name" placeholder="Digite o nome que aparecerá no certificado" /></label>
-        <fieldset class="clinic-certificate-signature-options"><legend>Assinatura do aluno</legend><label><input type="radio" name="clinic-certificate-signature" value="typed" checked /> Assinar digitando o nome</label><label><input type="radio" name="clinic-certificate-signature" value="manual" /> Deixar em branco para imprimir e assinar depois</label></fieldset>
-        <div class="clinic-certificate-actions">
-          <button type="button" class="clinic-certificate-generate">Baixar certificado em PDF</button>
-          <button type="button" class="clinic-certificate-share">Compartilhar certificado</button>
-        </div>
-        <div class="clinic-certificate-message" aria-live="polite"></div>
-      ` : `<div class="clinic-certificate-locked"><strong>${progress}%</strong><span>Progresso atual</span></div>`}
-    </section>`;
+  certificateModal.innerHTML = `<section class="clinic-certificate-modal" role="dialog" aria-modal="true" aria-labelledby="clinic-certificate-title"><button type="button" class="clinic-certificate-close" aria-label="Fechar">×</button><span class="clinic-certificate-kicker">Certificado de conclusão</span><h2 id="clinic-certificate-title">${unlocked ? 'Seu certificado está disponível' : 'Certificado bloqueado'}</h2><div class="clinic-certificate-body">${unlocked ? '<p>Carregando seu certificado...</p>' : `<p>Seu progresso atual é ${progress}%. O certificado será liberado automaticamente quando o contador chegar a 100%.</p><div class="clinic-certificate-locked"><strong>${progress}%</strong><span>Progresso atual</span></div>`}</div></section>`;
 
   certificateModal.querySelector('.clinic-certificate-close').addEventListener('click', closeCertificateModal);
   certificateModal.addEventListener('click', (event) => { if (event.target === certificateModal) closeCertificateModal(); });
+  document.body.appendChild(certificateModal);
+  if (!unlocked) return;
 
-  if (unlocked) {
-    const nameInput = certificateModal.querySelector('#clinic-certificate-name');
-    const message = certificateModal.querySelector('.clinic-certificate-message');
-    const downloadButton = certificateModal.querySelector('.clinic-certificate-generate');
-    const shareButton = certificateModal.querySelector('.clinic-certificate-share');
+  const body = certificateModal.querySelector('.clinic-certificate-body');
 
-    async function createPdf() {
-      const name = nameInput.value.trim();
-      if (name.length < 3) {
-        message.textContent = 'Digite o nome completo antes de gerar o certificado.';
-        nameInput.focus();
-        return null;
-      }
-      const signatureMode = certificateModal.querySelector('input[name="clinic-certificate-signature"]:checked')?.value || 'typed';
-      return generateCertificatePdf({ name, completionDate, typedSignature: signatureMode === 'typed' });
-    }
+  async function showIssuedState(status, messageText = '') {
+    body.innerHTML = `<p>${status.locked ? 'Certificado definitivo emitido. Os dados estão bloqueados.' : 'Certificado emitido. Você ainda possui uma correção disponível.'}</p><div class="clinic-certificate-meta"><div><span>Nome emitido</span><strong>${escaped(status.name)}</strong></div><div><span>Emissões utilizadas</span><strong>${status.issue_count}/2</strong></div></div><div class="clinic-certificate-actions"><button type="button" class="clinic-certificate-open">Abrir certificado</button><button type="button" class="clinic-certificate-share">Compartilhar certificado</button>${status.locked ? '' : '<button type="button" class="clinic-certificate-correct">Corrigir nome/assinatura</button>'}</div><div class="clinic-certificate-message" aria-live="polite">${escaped(messageText)}</div>`;
+    const message = body.querySelector('.clinic-certificate-message');
+    const setBusy = (busy) => [...body.querySelectorAll('button')].forEach((button) => { button.disabled = busy; });
 
-    downloadButton.addEventListener('click', async () => {
-      message.textContent = 'Gerando seu certificado em PDF...';
-      downloadButton.disabled = true;
-      shareButton.disabled = true;
-      try {
-        const result = await createPdf();
-        if (!result) return;
-        downloadPdf(result.blob, result.filename);
-        message.textContent = `Certificado gerado: ${result.filename}`;
-      } catch (error) {
-        message.textContent = error.message || 'Não foi possível gerar o certificado.';
-      } finally {
-        downloadButton.disabled = false;
-        shareButton.disabled = false;
-      }
+    body.querySelector('.clinic-certificate-open').addEventListener('click', async () => {
+      setBusy(true); message.textContent = 'Abrindo seu certificado...';
+      try { openPdf(await getCurrentCertificate()); message.textContent = ''; }
+      catch (error) { message.textContent = error.message || 'Não foi possível abrir o certificado.'; }
+      finally { setBusy(false); }
     });
 
-    shareButton.addEventListener('click', async () => {
-      message.textContent = 'Preparando o arquivo do certificado...';
-      downloadButton.disabled = true;
-      shareButton.disabled = true;
+    body.querySelector('.clinic-certificate-share').addEventListener('click', async () => {
+      setBusy(true); message.textContent = 'Preparando o certificado para compartilhar...';
       try {
-        const result = await createPdf();
-        if (!result) return;
-        const shared = await sharePdf(result.blob, result.filename);
-        if (!shared) {
-          downloadPdf(result.blob, result.filename);
-          message.textContent = 'O compartilhamento direto não é suportado neste aparelho. O PDF foi baixado para você compartilhar pelo gerenciador de arquivos.';
-        } else {
-          message.textContent = 'Certificado preparado para compartilhamento.';
-        }
+        const blob = await getCurrentCertificate();
+        const shared = await sharePdf(blob, status.filename);
+        if (!shared) { openPdf(blob); message.textContent = 'O compartilhamento direto não é suportado neste aparelho. O certificado foi aberto para você usar a opção de compartilhar do visualizador.'; }
+        else message.textContent = '';
       } catch (error) {
-        if (error?.name === 'AbortError') {
-          message.textContent = '';
-        } else {
-          message.textContent = error.message || 'Não foi possível compartilhar o certificado.';
-        }
-      } finally {
-        downloadButton.disabled = false;
-        shareButton.disabled = false;
-      }
+        if (error?.name === 'AbortError') message.textContent = '';
+        else message.textContent = error.message || 'Não foi possível compartilhar o certificado.';
+      } finally { setBusy(false); }
+    });
+
+    body.querySelector('.clinic-certificate-correct')?.addEventListener('click', () => {
+      body.innerHTML = issuanceForm({ completionDate, currentName: status.name || '', typedSignature: status.typed_signature !== false, correction: true });
+      bindIssueForm(true);
     });
   }
 
-  document.body.appendChild(certificateModal);
+  function bindIssueForm(correction = false) {
+    const nameInput = body.querySelector('#clinic-certificate-name');
+    const message = body.querySelector('.clinic-certificate-message');
+    const issueButton = body.querySelector('.clinic-certificate-issue');
+    issueButton.addEventListener('click', async () => {
+      const name = nameInput.value.trim();
+      if (name.length < 3) { message.textContent = 'Digite o nome completo antes de emitir o certificado.'; nameInput.focus(); return; }
+      const signatureMode = body.querySelector('input[name="clinic-certificate-signature"]:checked')?.value || 'typed';
+      issueButton.disabled = true;
+      message.textContent = correction ? 'Emitindo a correção...' : 'Emitindo seu certificado...';
+      try {
+        const blob = await issueCertificate({ name, completionDate, typedSignature: signatureMode === 'typed' });
+        openPdf(blob);
+        const status = await getCertificateStatus();
+        await showIssuedState(status, correction ? 'Correção emitida. Este certificado agora é definitivo.' : 'Certificado emitido com sucesso.');
+      } catch (error) { message.textContent = error.message || 'Não foi possível emitir o certificado.'; }
+      finally { issueButton.disabled = false; }
+    });
+  }
+
+  try {
+    const status = await getCertificateStatus();
+    if (status.issued) await showIssuedState(status);
+    else { body.innerHTML = `<p>A conclusão foi reconhecida pelo contador de progresso. Confira os dados antes da primeira emissão.</p>${issuanceForm({ completionDate })}`; bindIssueForm(false); }
+  } catch (error) {
+    body.innerHTML = `<p class="clinic-certificate-message">${escaped(error.message || 'Não foi possível carregar o certificado.')}</p>`;
+  }
 }
 
 function ensureCertificateEntry() {
@@ -227,29 +226,17 @@ function ensureCertificateEntry() {
     button.innerHTML = '<span>▣</span> Certificado';
     button.addEventListener('click', openCertificateModal);
     const progressButton = [...nav.querySelectorAll('button')].find((item) => String(item.textContent || '').includes('Meu Progresso'));
-    if (progressButton) progressButton.insertAdjacentElement('afterend', button);
-    else nav.appendChild(button);
+    if (progressButton) progressButton.insertAdjacentElement('afterend', button); else nav.appendChild(button);
   }
-
   const progress = readProgress();
-  if (progress === 100) {
-    getCompletionDate(progress);
-    button.classList.add('is-unlocked');
-    button.title = 'Certificado disponível';
-  } else {
-    getCompletionDate(progress);
-    button.classList.remove('is-unlocked');
-    button.title = `Certificado disponível ao concluir 100% do curso (${progress}% atual)`;
-  }
+  if (progress === 100) { getCompletionDate(progress); button.classList.add('is-unlocked'); button.title = 'Certificado disponível'; }
+  else { getCompletionDate(progress); button.classList.remove('is-unlocked'); button.title = `Certificado disponível ao concluir 100% do curso (${progress}% atual)`; }
 }
 
 function scheduleSync() {
   if (scheduled) return;
   scheduled = true;
-  window.setTimeout(() => {
-    scheduled = false;
-    ensureCertificateEntry();
-  }, 60);
+  window.setTimeout(() => { scheduled = false; ensureCertificateEntry(); }, 60);
 }
 
 const observer = new MutationObserver(scheduleSync);
