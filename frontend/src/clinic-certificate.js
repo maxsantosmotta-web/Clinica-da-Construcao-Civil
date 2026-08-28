@@ -99,17 +99,9 @@ async function getCurrentCertificate() {
 
 function openPdf(blob) {
   const url = URL.createObjectURL(blob);
-  const opened = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!opened) {
-    const link = document.createElement('a');
-    link.href = url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  // No Android, abrir blob em _blank cria uma aba branca intermediária.
+  // Navegar na própria aba entrega diretamente o PDF ao visualizador do aparelho.
+  window.location.assign(url);
 }
 
 async function sharePdf(blob, filename) {
@@ -198,9 +190,9 @@ async function openCertificateModal() {
       message.textContent = correction ? 'Emitindo a correção...' : 'Emitindo seu certificado...';
       try {
         const blob = await issueCertificate({ name, completionDate, typedSignature: signatureMode === 'typed' });
-        openPdf(blob);
         const status = await getCertificateStatus();
         await showIssuedState(status, correction ? 'Correção emitida. Este certificado agora é definitivo.' : 'Certificado emitido com sucesso.');
+        openPdf(blob);
       } catch (error) { message.textContent = error.message || 'Não foi possível emitir o certificado.'; }
       finally { issueButton.disabled = false; }
     });
