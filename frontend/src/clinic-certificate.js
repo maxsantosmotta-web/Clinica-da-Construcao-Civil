@@ -22,7 +22,10 @@ function readProgress() {
 }
 
 function getCompletionDate(progress) {
-  if (progress !== 100) return null;
+  if (progress !== 100) {
+    localStorage.removeItem(CERTIFICATE_STORAGE_KEY);
+    return null;
+  }
   let stored = localStorage.getItem(CERTIFICATE_STORAGE_KEY);
   if (!stored) {
     stored = new Date().toISOString();
@@ -228,6 +231,7 @@ function ensureCertificateEntry() {
     button.classList.add('is-unlocked');
     button.title = 'Certificado disponível';
   } else {
+    getCompletionDate(progress);
     button.classList.remove('is-unlocked');
     button.title = `Certificado disponível ao concluir 100% do curso (${progress}% atual)`;
   }
