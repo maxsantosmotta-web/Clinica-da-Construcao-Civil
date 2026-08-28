@@ -84,8 +84,9 @@ def _render_certificate(name: str, completed_at: datetime, typed_signature: bool
     time_text = completed_at.strftime("%H:%M")
     pdf.setFillColor(colors.HexColor("#151515"))
     pdf.setFont("Helvetica-Bold", 10)
-    pdf.drawString(205, 64, date_text)
-    pdf.drawString(205, 36, time_text)
+    # A arte oficial já possui os campos. Apenas gravamos os valores sobre os espaços existentes.
+    pdf.drawString(286, 64, date_text)
+    pdf.drawString(248, 36, time_text)
 
     pdf.showPage()
     pdf.save()
