@@ -23,6 +23,9 @@ CERTIFICATE_ARTWORK = Path(__file__).resolve().parent.parent / "assets" / "certi
 # Certificados já emitidos antes desta correção visual são regravados uma única vez,
 # sem consumir nova emissão, para receber apenas o alinhamento corrigido de data/horário.
 CERTIFICATE_LAYOUT_UPDATED_AT = datetime(2026, 8, 28, 22, 45, tzinfo=timezone.utc)
+# Temporário durante os testes finais. Reativar a trava de duas emissões somente
+# depois de todos os testes do certificado serem validados.
+CERTIFICATE_TEST_UNLOCKED = True
 
 
 class CertificateIssue(Base):
@@ -134,8 +137,8 @@ def certificate_status(session: dict = Depends(require_authenticated_user)):
         return {
             "issued": True,
             "issue_count": issue.issue_count,
-            "remaining_corrections": max(0, 2 - issue.issue_count),
-            "locked": issue.issue_count >= 2,
+            "remaining_corrections": 1 if CERTIFICATE_TEST_UNLOCKED else max(0, 2 - issue.issue_count),
+            "locked": False if CERTIFICATE_TEST_UNLOCKED else issue.issue_count >= 2,
             "name": issue.name,
             "typed_signature": issue.typed_signature,
             "completed_at": issue.completed_at.isoformat(),
@@ -155,11 +158,11 @@ def issue_certificate(payload: CertificateRequest, session: dict = Depends(requi
     with session_scope() as db:
         issue = db.query(CertificateIssue).filter(CertificateIssue.user_id == user_id).with_for_update().one_or_none()
         current_count = issue.issue_count if issue else 0
-        if current_count >= 2:
+        if not CERTIFICATE_TEST_UNLOCKED and current_count >= 2:
             raise HTTPException(status_code=409, detail="O limite de duas emissões deste certificado já foi utilizado.")
 
         pdf_content = _render_certificate(name, completed_at, payload.typed_signature)
-        new_count = current_count + 1
+        new_count = min(current_count + 1, 2) if CERTIFICATE_TEST_UNLOCKED else current_count + 1
         filename = f"Certificado-{_safe_filename(name)}.pdf"
 
         if issue is None:
