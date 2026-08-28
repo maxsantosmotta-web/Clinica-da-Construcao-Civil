@@ -22,7 +22,7 @@ SAO_PAULO = ZoneInfo("America/Sao_Paulo")
 CERTIFICATE_ARTWORK = Path(__file__).resolve().parent.parent / "assets" / "certificate-template.png"
 # Certificados já emitidos antes desta correção visual são regravados uma única vez,
 # sem consumir nova emissão, para receber apenas o alinhamento corrigido de data/horário.
-CERTIFICATE_LAYOUT_UPDATED_AT = datetime(2026, 8, 28, 22, 20, tzinfo=timezone.utc)
+CERTIFICATE_LAYOUT_UPDATED_AT = datetime(2026, 8, 28, 22, 45, tzinfo=timezone.utc)
 
 
 class CertificateIssue(Base):
@@ -87,10 +87,10 @@ def _render_certificate(name: str, completed_at: datetime, typed_signature: bool
     date_text = local_completed_at.strftime("%d/%m/%Y")
     time_text = local_completed_at.strftime("%H:%M")
     pdf.setFillColor(colors.HexColor("#151515"))
-    pdf.setFont("Helvetica-Bold", 10)
-    # A arte oficial já possui as linhas. Os valores ficam acima delas, sem desenhar linha nova.
-    pdf.drawString(286, 69, date_text)
-    pdf.drawString(248, 41, time_text)
+    pdf.setFont("Helvetica-Bold", 8.5)
+    # A arte oficial já contém as duas linhas. Centraliza somente os valores sobre cada campo.
+    pdf.drawCentredString(318, 74, date_text)
+    pdf.drawCentredString(292, 46, time_text)
 
     pdf.showPage()
     pdf.save()
