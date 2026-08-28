@@ -1,6 +1,6 @@
 import io
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -11,19 +11,39 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
+from sqlalchemy import Boolean, DateTime, Integer, LargeBinary, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.auth import require_authenticated_user
+from app.database import Base, session_scope
 
 router = APIRouter(prefix="/api/certificate", tags=["certificate"])
 SAO_PAULO = ZoneInfo("America/Sao_Paulo")
 CERTIFICATE_ARTWORK = Path(__file__).resolve().parent.parent / "assets" / "certificate-template.png"
 
 
+class CertificateIssue(Base):
+    __tablename__ = "certificate_issues"
+
+    user_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    issue_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    name: Mapped[str] = mapped_column(String(180), nullable=False)
+    typed_signature: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    completed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    pdf_content: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+
 class CertificateRequest(BaseModel):
     name: str = Field(min_length=3, max_length=180)
     completed_at: str
     typed_signature: bool = True
-    logo_data_uri: str = ""
 
 
 def _safe_filename(name: str) -> str:
@@ -41,18 +61,9 @@ def _parse_completed_at(value: str) -> datetime:
     return parsed.astimezone(SAO_PAULO)
 
 
-@router.post("/pdf")
-def certificate_pdf(
-    payload: CertificateRequest,
-    session: dict = Depends(require_authenticated_user),
-):
-    if not session.get("sub"):
-        raise HTTPException(status_code=401, detail="Sessão inválida.")
+def _render_certificate(name: str, completed_at: datetime, typed_signature: bool) -> bytes:
     if not CERTIFICATE_ARTWORK.exists():
         raise HTTPException(status_code=500, detail="Arte oficial do certificado não encontrada.")
-
-    completed_at = _parse_completed_at(payload.completed_at)
-    name = payload.name.strip()
 
     buffer = io.BytesIO()
     width, height = landscape(A4)
@@ -61,12 +72,10 @@ def certificate_pdf(
     pdf.setAuthor("Clínica da Construção Civil")
     pdf.setSubject("Certificado de Conclusão - Curso de Elétrica e Hidráulica")
 
-    # Arte oficial e imutável: nenhuma reconstrução de layout.
     artwork = ImageReader(str(CERTIFICATE_ARTWORK))
     pdf.drawImage(artwork, 0, 0, width=width, height=height, preserveAspectRatio=False, mask="auto")
 
-    # Únicas sobreposições: assinatura/nome do aluno, data e horário.
-    if payload.typed_signature:
+    if typed_signature:
         pdf.setFillColor(colors.HexColor("#151515"))
         pdf.setFont("Helvetica-Oblique", 20)
         pdf.drawCentredString(width / 2, 344, name)
@@ -75,18 +84,99 @@ def certificate_pdf(
     time_text = completed_at.strftime("%H:%M")
     pdf.setFillColor(colors.HexColor("#151515"))
     pdf.setFont("Helvetica-Bold", 10)
-    pdf.drawString(216, 76, date_text)
-    pdf.drawString(222, 48, time_text)
+    pdf.drawString(205, 64, date_text)
+    pdf.drawString(205, 36, time_text)
 
     pdf.showPage()
     pdf.save()
-    data = buffer.getvalue()
-    filename = f"Certificado-{_safe_filename(name)}.pdf"
+    return buffer.getvalue()
+
+
+def _pdf_response(issue: CertificateIssue, *, inline: bool = True) -> Response:
+    disposition = "inline" if inline else "attachment"
     return Response(
-        content=data,
+        content=issue.pdf_content,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="{filename}"',
-            "Cache-Control": "no-store",
+            "Content-Disposition": f'{disposition}; filename="{issue.filename}"',
+            "Cache-Control": "no-store, max-age=0",
         },
     )
+
+
+@router.get("/status")
+def certificate_status(session: dict = Depends(require_authenticated_user)):
+    user_id = session.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sessão inválida.")
+
+    with session_scope() as db:
+        issue = db.get(CertificateIssue, user_id)
+        if not issue:
+            return {"issued": False, "issue_count": 0, "remaining_corrections": 1, "locked": False}
+        return {
+            "issued": True,
+            "issue_count": issue.issue_count,
+            "remaining_corrections": max(0, 2 - issue.issue_count),
+            "locked": issue.issue_count >= 2,
+            "name": issue.name,
+            "typed_signature": issue.typed_signature,
+            "completed_at": issue.completed_at.isoformat(),
+            "filename": issue.filename,
+        }
+
+
+@router.post("/issue")
+def issue_certificate(payload: CertificateRequest, session: dict = Depends(require_authenticated_user)):
+    user_id = session.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sessão inválida.")
+
+    completed_at = _parse_completed_at(payload.completed_at)
+    name = payload.name.strip()
+
+    with session_scope() as db:
+        issue = db.query(CertificateIssue).filter(CertificateIssue.user_id == user_id).with_for_update().one_or_none()
+        current_count = issue.issue_count if issue else 0
+        if current_count >= 2:
+            raise HTTPException(status_code=409, detail="O limite de duas emissões deste certificado já foi utilizado.")
+
+        pdf_content = _render_certificate(name, completed_at, payload.typed_signature)
+        new_count = current_count + 1
+        filename = f"Certificado-{_safe_filename(name)}.pdf"
+
+        if issue is None:
+            issue = CertificateIssue(
+                user_id=user_id,
+                issue_count=new_count,
+                name=name,
+                typed_signature=payload.typed_signature,
+                completed_at=completed_at,
+                filename=filename,
+                pdf_content=pdf_content,
+            )
+            db.add(issue)
+        else:
+            issue.issue_count = new_count
+            issue.name = name
+            issue.typed_signature = payload.typed_signature
+            issue.completed_at = completed_at
+            issue.filename = filename
+            issue.pdf_content = pdf_content
+            issue.updated_at = datetime.now(timezone.utc)
+
+        db.flush()
+        return _pdf_response(issue)
+
+
+@router.get("/pdf")
+def current_certificate_pdf(session: dict = Depends(require_authenticated_user)):
+    user_id = session.get("sub")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sessão inválida.")
+
+    with session_scope() as db:
+        issue = db.get(CertificateIssue, user_id)
+        if not issue:
+            raise HTTPException(status_code=404, detail="Certificado ainda não emitido.")
+        return _pdf_response(issue)
