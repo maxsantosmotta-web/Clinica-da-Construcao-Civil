@@ -97,11 +97,21 @@ async function getCurrentCertificate() {
   return blob;
 }
 
-function openPdf(blob) {
+function preparePdfWindow() {
+  const viewer = window.open('', '_blank');
+  if (viewer) {
+    viewer.document.open();
+    viewer.document.write('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Certificado</title></head><body style="margin:0;background:#f4f6f8;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;color:#17352e">Carregando certificado...</body></html>');
+    viewer.document.close();
+  }
+  return viewer;
+}
+
+function openPdfInPreparedWindow(viewer, blob) {
   const url = URL.createObjectURL(blob);
-  // No Android, abrir blob em _blank cria uma aba branca intermediária.
-  // Navegar na própria aba entrega diretamente o PDF ao visualizador do aparelho.
-  window.location.assign(url);
+  if (viewer && !viewer.closed) viewer.location.replace(url);
+  else window.location.assign(url);
+  window.setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
 
 async function sharePdf(blob, filename) {
@@ -153,10 +163,16 @@ async function openCertificateModal() {
     const setBusy = (busy) => [...body.querySelectorAll('button')].forEach((button) => { button.disabled = busy; });
 
     body.querySelector('.clinic-certificate-open').addEventListener('click', async () => {
+      const viewer = preparePdfWindow();
       setBusy(true); message.textContent = 'Abrindo seu certificado...';
-      try { openPdf(await getCurrentCertificate()); message.textContent = ''; }
-      catch (error) { message.textContent = error.message || 'Não foi possível abrir o certificado.'; }
-      finally { setBusy(false); }
+      try {
+        const blob = await getCurrentCertificate();
+        openPdfInPreparedWindow(viewer, blob);
+        message.textContent = '';
+      } catch (error) {
+        if (viewer && !viewer.closed) viewer.close();
+        message.textContent = error.message || 'Não foi possível abrir o certificado.';
+      } finally { setBusy(false); }
     });
 
     body.querySelector('.clinic-certificate-share').addEventListener('click', async () => {
@@ -164,7 +180,7 @@ async function openCertificateModal() {
       try {
         const blob = await getCurrentCertificate();
         const shared = await sharePdf(blob, status.filename);
-        if (!shared) { openPdf(blob); message.textContent = 'O compartilhamento direto não é suportado neste aparelho. O certificado foi aberto para você usar a opção de compartilhar do visualizador.'; }
+        if (!shared) message.textContent = 'O compartilhamento direto não é suportado neste aparelho. Use “Abrir certificado” e compartilhe pelo visualizador.';
         else message.textContent = '';
       } catch (error) {
         if (error?.name === 'AbortError') message.textContent = '';
@@ -189,10 +205,9 @@ async function openCertificateModal() {
       issueButton.disabled = true;
       message.textContent = correction ? 'Emitindo a correção...' : 'Emitindo seu certificado...';
       try {
-        const blob = await issueCertificate({ name, completionDate, typedSignature: signatureMode === 'typed' });
+        await issueCertificate({ name, completionDate, typedSignature: signatureMode === 'typed' });
         const status = await getCertificateStatus();
         await showIssuedState(status, correction ? 'Correção emitida. Este certificado agora é definitivo.' : 'Certificado emitido com sucesso.');
-        openPdf(blob);
       } catch (error) { message.textContent = error.message || 'Não foi possível emitir o certificado.'; }
       finally { issueButton.disabled = false; }
     });
