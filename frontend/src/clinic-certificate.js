@@ -40,83 +40,73 @@ function formatTime(date) {
   return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
-function escapeHtml(value) {
-  return String(value || '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
+function safeFileName(name) {
+  return String(name || 'aluno')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'aluno';
 }
 
-function certificateMarkup({ name, completionDate, typedSignature }) {
-  const safeName = escapeHtml(name.trim());
-  const studentSignature = typedSignature
-    ? `<div class="student-signature typed">${safeName}</div>`
-    : '<div class="student-signature manual"></div>';
+async function getClerkToken() {
+  try {
+    if (window.Clerk?.session?.getToken) return await window.Clerk.session.getToken();
+  } catch {}
+  return null;
+}
 
-  return `<!doctype html>
-<html lang="pt-BR">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Certificado de Conclusão</title>
-<style>
-  @page{size:A4 landscape;margin:0}
-  *{box-sizing:border-box}
-  body{margin:0;background:#e9e7df;font-family:Arial,Helvetica,sans-serif;color:#15212b}
-  .sheet{width:297mm;height:210mm;margin:0 auto;background:#fffdf8;padding:12mm;position:relative;overflow:hidden}
-  .frame{height:100%;border:3px solid #b38b2e;outline:1px solid #1d2d3b;outline-offset:-8px;padding:12mm 16mm;position:relative}
-  .header{display:flex;align-items:center;gap:12mm}
-  .logo{width:32mm;height:32mm;object-fit:contain}
-  .brand{font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#1c3341}
-  .title{text-align:center;margin-top:-13mm}
-  .title h1{margin:0;font-size:30px;letter-spacing:.16em;color:#b38b2e}
-  .title h2{margin:3px 0 0;font-size:16px;letter-spacing:.22em;color:#1d2d3b}
-  .lead{text-align:center;margin:16mm 0 4mm;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-  .recipient{text-align:center;font-family:Georgia,serif;font-size:28px;font-weight:700;min-height:12mm;border-bottom:1px solid #b38b2e;max-width:190mm;margin:0 auto 8mm;padding-bottom:3mm}
-  .statement{text-align:center;font-size:15px;line-height:1.55;max-width:220mm;margin:0 auto 8mm}
-  .modules{border:1px solid #d7c48d;background:#fffaf0;padding:5mm 7mm;max-width:225mm;margin:0 auto 7mm}
-  .modules-title{text-align:center;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3mm;color:#6e5720}
-  .module-grid{display:grid;grid-template-columns:1fr 1fr;gap:10mm;font-size:9px;line-height:1.5}
-  .module-grid strong{display:block;margin-bottom:1mm;font-size:10px;text-transform:uppercase;color:#1d2d3b}
-  .disclaimer{text-align:center;font-size:8px;line-height:1.5;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#46535b;margin:0 auto 6mm}
-  .footer{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:8mm;margin-top:4mm}
-  .meta{font-size:9px;line-height:1.5;color:#34444d}
-  .signature-wrap{text-align:center;font-size:8px;text-transform:uppercase;color:#5a6469}
-  .student-signature{height:12mm;border-bottom:1px solid #293841;display:flex;align-items:flex-end;justify-content:center;padding-bottom:1mm;margin-bottom:2mm}
-  .student-signature.typed{font-family:"Brush Script MT","Segoe Script",cursive;font-size:22px;text-transform:none;color:#172a34}
-  .clinic-signature{height:12mm;border-bottom:1px solid #293841;display:flex;align-items:flex-end;justify-content:center;padding-bottom:1mm;margin-bottom:2mm;font-family:Georgia,serif;font-size:16px;font-weight:700;color:#1d2d3b;text-transform:none}
-  .seal{position:absolute;left:50%;bottom:9mm;transform:translateX(-50%);width:24mm;height:24mm;border:2px solid #b38b2e;border-radius:50%;display:grid;place-items:center;color:#b38b2e;font-weight:800;font-size:8px;text-align:center;letter-spacing:.08em}
-</style>
-</head>
-<body>
-  <main class="sheet">
-    <section class="frame">
-      <div class="header"><img class="logo" src="${CLINIC_LOGO}" alt="Clínica da Construção Civil" /><div class="brand">Clínica da Construção Civil</div></div>
-      <div class="title"><h1>CERTIFICADO</h1><h2>DE CONCLUSÃO</h2></div>
-      <div class="lead">Certificamos para os devidos fins que</div>
-      <div class="recipient">${safeName}</div>
-      <div class="statement">Concluiu com êxito o treinamento completo com a carga horária de <strong>40h</strong>, do curso de elétrica e hidráulica.</div>
-      <div class="modules">
-        <div class="modules-title">Especificações do conteúdo que compôs o curso</div>
-        <div class="module-grid">
-          <div><strong>Elétrica</strong>Instalação de tomadas<br/>Chuveiros elétricos<br/>Interruptores e lâmpadas<br/>Quadros de Distribuição<br/>Normas NR10</div>
-          <div><strong>Hidráulica</strong>Instalações residenciais<br/>Pressurização de rede<br/>Redes de água e esgoto<br/>Reparos e Vazamentos<br/>Reservatórios</div>
-        </div>
-      </div>
-      <div class="disclaimer">Curso de formação livre, não profissionalizante.<br/>Não confere habilitação profissional.</div>
-      <div class="footer">
-        <div class="meta"><strong>Conclusão</strong><br/>Data: ${formatDate(completionDate)}<br/>Hora: ${formatTime(completionDate)}</div>
-        <div class="signature-wrap">${studentSignature}<span>Assinatura do aluno</span></div>
-        <div class="signature-wrap"><div class="clinic-signature">Clínica da Construção Civil</div><span>Responsável pelo curso</span></div>
-      </div>
-      <div class="seal">CCC<br/>40H</div>
-    </section>
-  </main>
-  <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),250));<\/script>
-</body>
-</html>`;
+async function generateCertificatePdf({ name, completionDate, typedSignature }) {
+  const token = await getClerkToken();
+  if (!token) throw new Error('Não foi possível confirmar sua sessão. Atualize a página e tente novamente.');
+
+  const response = await fetch('/api/certificate/pdf', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      name,
+      completed_at: completionDate.toISOString(),
+      typed_signature: typedSignature,
+      logo_data_uri: CLINIC_LOGO,
+    }),
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.detail || 'Não foi possível gerar o certificado em PDF.');
+  }
+
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('O arquivo do certificado foi gerado vazio. Tente novamente.');
+  const filename = `Certificado-${safeFileName(name)}.pdf`;
+  return { blob, filename };
+}
+
+function downloadPdf(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+async function sharePdf(blob, filename) {
+  const file = new File([blob], filename, { type: 'application/pdf' });
+  if (navigator.share && navigator.canShare?.({ files: [file] })) {
+    await navigator.share({
+      title: 'Certificado de Conclusão',
+      text: 'Certificado de Conclusão — Clínica da Construção Civil',
+      files: [file],
+    });
+    return true;
+  }
+  return false;
 }
 
 function closeCertificateModal() {
@@ -136,13 +126,16 @@ function openCertificateModal() {
     <section class="clinic-certificate-modal" role="dialog" aria-modal="true" aria-labelledby="clinic-certificate-title">
       <button type="button" class="clinic-certificate-close" aria-label="Fechar">×</button>
       <span class="clinic-certificate-kicker">Certificado de conclusão</span>
-      <h2 id="clinic-certificate-title">${unlocked ? 'Seu certificado está disponível' : 'Certificado ainda bloqueado'}</h2>
+      <h2 id="clinic-certificate-title">${unlocked ? 'Seu certificado está disponível' : 'Certificado bloqueado'}</h2>
       <p>${unlocked ? 'A conclusão foi reconhecida automaticamente pelo contador de progresso.' : `Seu progresso atual é ${progress}%. O certificado será liberado automaticamente quando o contador chegar a 100%.`}</p>
       ${unlocked ? `
         <div class="clinic-certificate-meta"><div><span>Data da conclusão</span><strong>${formatDate(completionDate)}</strong></div><div><span>Horário</span><strong>${formatTime(completionDate)}</strong></div></div>
         <label class="clinic-certificate-field"><span>Nome completo</span><input type="text" id="clinic-certificate-name" autocomplete="name" placeholder="Digite o nome que aparecerá no certificado" /></label>
         <fieldset class="clinic-certificate-signature-options"><legend>Assinatura do aluno</legend><label><input type="radio" name="clinic-certificate-signature" value="typed" checked /> Assinar digitando o nome</label><label><input type="radio" name="clinic-certificate-signature" value="manual" /> Deixar em branco para imprimir e assinar depois</label></fieldset>
-        <div class="clinic-certificate-actions"><button type="button" class="clinic-certificate-generate">Visualizar / Imprimir certificado</button></div>
+        <div class="clinic-certificate-actions">
+          <button type="button" class="clinic-certificate-generate">Baixar certificado em PDF</button>
+          <button type="button" class="clinic-certificate-share">Compartilhar certificado</button>
+        </div>
         <div class="clinic-certificate-message" aria-live="polite"></div>
       ` : `<div class="clinic-certificate-locked"><strong>${progress}%</strong><span>Progresso atual</span></div>`}
     </section>`;
@@ -153,22 +146,61 @@ function openCertificateModal() {
   if (unlocked) {
     const nameInput = certificateModal.querySelector('#clinic-certificate-name');
     const message = certificateModal.querySelector('.clinic-certificate-message');
-    certificateModal.querySelector('.clinic-certificate-generate').addEventListener('click', () => {
+    const downloadButton = certificateModal.querySelector('.clinic-certificate-generate');
+    const shareButton = certificateModal.querySelector('.clinic-certificate-share');
+
+    async function createPdf() {
       const name = nameInput.value.trim();
       if (name.length < 3) {
         message.textContent = 'Digite o nome completo antes de gerar o certificado.';
         nameInput.focus();
-        return;
+        return null;
       }
       const signatureMode = certificateModal.querySelector('input[name="clinic-certificate-signature"]:checked')?.value || 'typed';
-      const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-      if (!printWindow) {
-        message.textContent = 'Não foi possível abrir a visualização. Libere pop-ups para este site e tente novamente.';
-        return;
+      return generateCertificatePdf({ name, completionDate, typedSignature: signatureMode === 'typed' });
+    }
+
+    downloadButton.addEventListener('click', async () => {
+      message.textContent = 'Gerando seu certificado em PDF...';
+      downloadButton.disabled = true;
+      shareButton.disabled = true;
+      try {
+        const result = await createPdf();
+        if (!result) return;
+        downloadPdf(result.blob, result.filename);
+        message.textContent = `Certificado gerado: ${result.filename}`;
+      } catch (error) {
+        message.textContent = error.message || 'Não foi possível gerar o certificado.';
+      } finally {
+        downloadButton.disabled = false;
+        shareButton.disabled = false;
       }
-      printWindow.document.open();
-      printWindow.document.write(certificateMarkup({ name, completionDate, typedSignature: signatureMode === 'typed' }));
-      printWindow.document.close();
+    });
+
+    shareButton.addEventListener('click', async () => {
+      message.textContent = 'Preparando o arquivo do certificado...';
+      downloadButton.disabled = true;
+      shareButton.disabled = true;
+      try {
+        const result = await createPdf();
+        if (!result) return;
+        const shared = await sharePdf(result.blob, result.filename);
+        if (!shared) {
+          downloadPdf(result.blob, result.filename);
+          message.textContent = 'O compartilhamento direto não é suportado neste aparelho. O PDF foi baixado para você compartilhar pelo gerenciador de arquivos.';
+        } else {
+          message.textContent = 'Certificado preparado para compartilhamento.';
+        }
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          message.textContent = '';
+        } else {
+          message.textContent = error.message || 'Não foi possível compartilhar o certificado.';
+        }
+      } finally {
+        downloadButton.disabled = false;
+        shareButton.disabled = false;
+      }
     });
   }
 
