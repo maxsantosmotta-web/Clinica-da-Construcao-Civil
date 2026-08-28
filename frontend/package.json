@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "python3 simplify_clinic_profile.py && python3 persist_clinic_progress.py",
+    "prebuild": "python3 simplify_clinic_profile.py && python3 persist_clinic_progress.py && python3 fix_clinic_certificate_progress.py",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0 --port ${PORT:-4173}"
   },
