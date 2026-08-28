@@ -23,9 +23,8 @@ CERTIFICATE_ARTWORK = Path(__file__).resolve().parent.parent / "assets" / "certi
 # Certificados já emitidos antes desta correção visual são regravados uma única vez,
 # sem consumir nova emissão, para receber apenas o alinhamento corrigido de data/horário.
 CERTIFICATE_LAYOUT_UPDATED_AT = datetime(2026, 8, 28, 22, 45, tzinfo=timezone.utc)
-# Temporário durante os testes finais. Reativar a trava de duas emissões somente
-# depois de todos os testes do certificado serem validados.
-CERTIFICATE_TEST_UNLOCKED = True
+# Trava definitiva: no máximo duas emissões por aluno.
+CERTIFICATE_TEST_UNLOCKED = False
 
 
 class CertificateIssue(Base):
