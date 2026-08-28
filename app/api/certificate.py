@@ -16,13 +16,7 @@ from app.auth import require_authenticated_user
 
 router = APIRouter(prefix="/api/certificate", tags=["certificate"])
 SAO_PAULO = ZoneInfo("America/Sao_Paulo")
-CERTIFICATE_ARTWORK = (
-    Path(__file__).resolve().parents[2]
-    / "frontend"
-    / "src"
-    / "assets"
-    / "file_0000000069b8820eabdc9a847fdeaa19.png"
-)
+CERTIFICATE_ARTWORK = Path(__file__).resolve().parent.parent / "assets" / "certificate-template.png"
 
 
 class CertificateRequest(BaseModel):
@@ -67,11 +61,11 @@ def certificate_pdf(
     pdf.setAuthor("Clínica da Construção Civil")
     pdf.setSubject("Certificado de Conclusão - Curso de Elétrica e Hidráulica")
 
-    # A arte validada é imutável: ocupa a página inteira sem reconstrução.
+    # Arte oficial e imutável: nenhuma reconstrução de layout.
     artwork = ImageReader(str(CERTIFICATE_ARTWORK))
     pdf.drawImage(artwork, 0, 0, width=width, height=height, preserveAspectRatio=False, mask="auto")
 
-    # Únicas sobreposições permitidas: assinatura/nome do aluno, data e horário.
+    # Únicas sobreposições: assinatura/nome do aluno, data e horário.
     if payload.typed_signature:
         pdf.setFillColor(colors.HexColor("#151515"))
         pdf.setFont("Helvetica-Oblique", 20)
