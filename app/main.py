@@ -13,6 +13,7 @@ from app.api.admin_users import router as admin_users_router
 from app.api.artifacts import router as artifacts_router
 from app.api.auth import router as auth_router
 from app.api.billing import router as billing_router
+from app.api.certificate import router as certificate_router
 from app.api.chat_persistent import router as chat_persistent_router
 from app.api.chat_state import router as chat_state_router
 from app.api.chat_tasks import router as chat_tasks_router
@@ -110,6 +111,7 @@ app.include_router(artifacts_router)
 app.include_router(trash_router)
 app.include_router(profile_router)
 app.include_router(billing_router)
+app.include_router(certificate_router)
 app.include_router(feedback_router)
 app.include_router(videos_router)
 
