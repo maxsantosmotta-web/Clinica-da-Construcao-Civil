@@ -1,1 +1,0 @@
-Use existing Git blob 93c367450f55f0c66c7995f214413d453b8c2fa3 as app/assets/certificate-template.png.
