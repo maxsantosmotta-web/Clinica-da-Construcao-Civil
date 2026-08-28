@@ -20,6 +20,9 @@ from app.database import Base, session_scope
 router = APIRouter(prefix="/api/certificate", tags=["certificate"])
 SAO_PAULO = ZoneInfo("America/Sao_Paulo")
 CERTIFICATE_ARTWORK = Path(__file__).resolve().parent.parent / "assets" / "certificate-template.png"
+# Certificados já emitidos antes desta correção visual são regravados uma única vez,
+# sem consumir nova emissão, para receber apenas o alinhamento corrigido de data/horário.
+CERTIFICATE_LAYOUT_UPDATED_AT = datetime(2026, 8, 28, 22, 20, tzinfo=timezone.utc)
 
 
 class CertificateIssue(Base):
@@ -80,13 +83,14 @@ def _render_certificate(name: str, completed_at: datetime, typed_signature: bool
         pdf.setFont("Helvetica-Oblique", 20)
         pdf.drawCentredString(width / 2, 344, name)
 
-    date_text = completed_at.strftime("%d/%m/%Y")
-    time_text = completed_at.strftime("%H:%M")
+    local_completed_at = completed_at.astimezone(SAO_PAULO) if completed_at.tzinfo else completed_at.replace(tzinfo=SAO_PAULO)
+    date_text = local_completed_at.strftime("%d/%m/%Y")
+    time_text = local_completed_at.strftime("%H:%M")
     pdf.setFillColor(colors.HexColor("#151515"))
     pdf.setFont("Helvetica-Bold", 10)
-    # A arte oficial já possui os campos. Apenas gravamos os valores sobre os espaços existentes.
-    pdf.drawString(286, 64, date_text)
-    pdf.drawString(248, 36, time_text)
+    # A arte oficial já possui as linhas. Os valores ficam acima delas, sem desenhar linha nova.
+    pdf.drawString(286, 69, date_text)
+    pdf.drawString(248, 41, time_text)
 
     pdf.showPage()
     pdf.save()
@@ -103,6 +107,18 @@ def _pdf_response(issue: CertificateIssue, *, inline: bool = True) -> Response:
             "Cache-Control": "no-store, max-age=0",
         },
     )
+
+
+def _refresh_saved_layout_once(issue: CertificateIssue, db) -> None:
+    updated_at = issue.updated_at
+    if updated_at.tzinfo is None:
+        updated_at = updated_at.replace(tzinfo=timezone.utc)
+    if updated_at >= CERTIFICATE_LAYOUT_UPDATED_AT:
+        return
+
+    issue.pdf_content = _render_certificate(issue.name, issue.completed_at, issue.typed_signature)
+    issue.updated_at = datetime.now(timezone.utc)
+    db.flush()
 
 
 @router.get("/status")
@@ -180,4 +196,5 @@ def current_certificate_pdf(session: dict = Depends(require_authenticated_user))
         issue = db.get(CertificateIssue, user_id)
         if not issue:
             raise HTTPException(status_code=404, detail="Certificado ainda não emitido.")
+        _refresh_saved_layout_once(issue, db)
         return _pdf_response(issue)
