@@ -1,11 +1,16 @@
 import CLINIC_LOGO from './assets/clinic-logo-data.js';
 import './clinic-certificate.css';
 
-const CERTIFICATE_STORAGE_KEY = 'clinic:certificate-completed-at';
+function certificateStorageKey() {
+  const userId = window.__clinicCourseProgress?.userId || 'local';
+  return `clinic:certificate-completed-at:${userId}`;
+}
 let certificateModal = null;
 let scheduled = false;
 
 function readProgress() {
+  const liveProgress = Number(window.__clinicCourseProgress?.progress);
+  if (Number.isFinite(liveProgress)) return liveProgress;
   const rings = [...document.querySelectorAll('.clinic-progress-ring span')];
   for (const ring of rings) {
     const value = Number.parseInt(String(ring.textContent || '').replace(/\D/g, ''), 10);
@@ -22,14 +27,15 @@ function readProgress() {
 }
 
 function getCompletionDate(progress) {
+  const storageKey = certificateStorageKey();
   if (progress !== 100) {
-    localStorage.removeItem(CERTIFICATE_STORAGE_KEY);
+    localStorage.removeItem(storageKey);
     return null;
   }
-  let stored = localStorage.getItem(CERTIFICATE_STORAGE_KEY);
+  let stored = localStorage.getItem(storageKey);
   if (!stored) {
     stored = new Date().toISOString();
-    localStorage.setItem(CERTIFICATE_STORAGE_KEY, stored);
+    localStorage.setItem(storageKey, stored);
   }
   const date = new Date(stored);
   return Number.isNaN(date.getTime()) ? new Date() : date;
@@ -249,5 +255,6 @@ function scheduleSync() {
 const observer = new MutationObserver(scheduleSync);
 observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
 window.addEventListener('hashchange', scheduleSync);
+window.addEventListener('clinic-course-progress', scheduleSync);
 window.addEventListener('load', scheduleSync);
 scheduleSync();
