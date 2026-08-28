@@ -47,6 +47,7 @@ import './clinic-landing.js';
 import './public-links.js';
 import './clinic-auth.css';
 import './clinic-auth.js';
+import './clinic-certificate.js';
 
 const rootElement = document.getElementById('root');
 
