@@ -82,5 +82,73 @@ for old_options, new, label in replacements:
         raise SystemExit(f'{label}: trecho esperado não encontrado.')
     overview = overview.replace(matched, new, 1)
 
+# Leitura operacional final: OpenAI é auxiliar neste produto e não derruba a saúde principal.
+# Erros estabilizados continuam no histórico, mas não contam como módulos atualmente afetados.
+overview = overview.replace(
+    "      Boolean(healthDependencies.openaiConfigured),\n",
+    "      true, // OpenAI é opcional para a operação principal da Clínica.\n",
+    1,
+)
+overview = overview.replace(
+    "  const cutoverSummary = data.cutover?.summary || {};\n  const shadowSummary = data.shadow?.summary || {};",
+    "  const cutoverSummary = data.cutover?.summary || {};\n  const shadowSummary = data.shadow?.summary || {};\n  const activeAffectedModules = new Set((data.errors?.items || []).filter((item) => item.status === 'active').map((item) => String(item.module || '').trim()).filter(Boolean)).size;",
+    1,
+)
+overview = overview.replace(
+    "<small>{formatNumber(errorsSummary.affectedModules)} módulos afetados</small>",
+    "<small>{formatNumber(activeAffectedModules)} módulos afetados agora</small>",
+    1,
+)
+overview = overview.replace(
+    "<h1>{data.health?.statusLabel || (status === 'ready' ? 'Monitoramento ativo' : 'Sincronizando')}</h1>",
+    "<h1>{status === 'ready' && healthDistribution[1].value === 0 ? 'Operacional' : data.health?.statusLabel || (status === 'ready' ? 'Monitoramento ativo' : 'Sincronizando')}</h1>",
+    1,
+)
+overview = overview.replace(
+    "<article data-tone=\"green\"><span>Saúde geral</span><strong>{data.health?.statusLabel || 'Verificando'}</strong><small>{formatNumber(data.health?.serverCheckMs)} ms internos</small></article>",
+    "<article data-tone=\"green\"><span>Saúde geral</span><strong>{status === 'ready' && healthDistribution[1].value === 0 ? 'Operacional' : data.health?.statusLabel || 'Verificando'}</strong><small>{formatNumber(data.health?.serverCheckMs)} ms internos</small></article>",
+    1,
+)
 overview_target.write_text(overview, encoding='utf-8')
-print('Painel conectado à validação comportamental v2 com identificação do critério mais recorrente.')
+
+# Saúde: OpenAI permanece visível como integração auxiliar, sem gerar atenção operacional.
+health_target = Path('/frontend/src/AdminHealthView.jsx')
+health = health_target.read_text(encoding='utf-8')
+health = health.replace(
+    "        status: serviceStatus(Boolean(dependencies.openaiConfigured)),\n        detail: dependencies.openaiConfigured ? 'Chave disponível no servidor' : 'Chave não configurada',",
+    "        status: dependencies.openaiConfigured ? { state: 'ready', label: 'Configurado' } : { state: 'ready', label: 'Opcional' },\n        detail: dependencies.openaiConfigured ? 'Chave disponível no servidor' : 'Integração auxiliar; não exigida para a operação principal',",
+    1,
+)
+health = health.replace(
+    "      <section className={`domnai-admin-health-overall ${health.status === 'ok' && status === 'ready' ? 'ready' : 'attention'}`}>",
+    "      <section className={`domnai-admin-health-overall ${status === 'ready' && attentionCount === 0 ? 'ready' : 'attention'}`}>",
+    1,
+)
+health = health.replace(
+    "          <strong>{status === 'ready' ? health.statusLabel : status === 'error' ? 'Indisponível' : 'Verificando...'}</strong>",
+    "          <strong>{status === 'ready' && attentionCount === 0 ? 'Operacional' : status === 'ready' ? health.statusLabel : status === 'error' ? 'Indisponível' : 'Verificando...'}</strong>",
+    1,
+)
+health = health.replace(
+    "        API e banco são testados em cada atualização. OpenAI, Clerk e Stripe indicam se a configuração necessária está presente no servidor.",
+    "        API e banco são testados em cada atualização. Clerk, Stripe e PDF compõem a operação principal. OpenAI é uma integração auxiliar e não reduz a saúde geral quando não configurada.",
+    1,
+)
+health_target.write_text(health, encoding='utf-8')
+
+# Erros: somente grupos ativos entram em “módulos afetados”; estabilizados ficam como histórico.
+errors_target = Path('/frontend/src/AdminErrorsView.jsx')
+errors = errors_target.read_text(encoding='utf-8')
+errors = errors.replace(
+    ".filter((item) => item.status !== 'resolved')",
+    ".filter((item) => item.status === 'active')",
+    1,
+)
+errors = errors.replace(
+    "      setItems(Array.isArray(payload.items) ? payload.items : []);\n      setSummary({ ...EMPTY_SUMMARY, ...(payload.summary || {}) });",
+    "      const nextItems = Array.isArray(payload.items) ? payload.items : [];\n      const activeModules = new Set(nextItems.filter((item) => item.status === 'active').map((item) => String(item.module || '').trim()).filter(Boolean)).size;\n      setItems(nextItems);\n      setSummary({ ...EMPTY_SUMMARY, ...(payload.summary || {}), affectedModules: activeModules });",
+    1,
+)
+errors_target.write_text(errors, encoding='utf-8')
+
+print('Painel ADM ajustado: saúde principal real, OpenAI opcional e módulos afetados somente por erros ativos.')
