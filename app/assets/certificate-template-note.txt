@@ -1,0 +1,1 @@
+Binary certificate artwork is stored as app/assets/certificate-template.png via git tree copy from the approved frontend asset.
