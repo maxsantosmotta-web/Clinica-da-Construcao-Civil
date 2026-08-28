@@ -2,6 +2,7 @@ import base64
 import io
 import re
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
@@ -14,6 +15,7 @@ from reportlab.pdfgen import canvas
 from app.auth import require_authenticated_user
 
 router = APIRouter(prefix="/api/certificate", tags=["certificate"])
+SAO_PAULO = ZoneInfo("America/Sao_Paulo")
 
 
 class CertificateRequest(BaseModel):
@@ -33,7 +35,9 @@ def _parse_completed_at(value: str) -> datetime:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except Exception as exc:
         raise HTTPException(status_code=400, detail="Data de conclusão inválida.") from exc
-    return parsed
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=SAO_PAULO)
+    return parsed.astimezone(SAO_PAULO)
 
 
 def _logo_reader(data_uri: str):
